@@ -75,11 +75,11 @@ client.on('message', async msg => {
         await client.sendMessage(msg.from, 'Enquanto isso, confira nossas ofertas 👇🏻');
 
         await enviarVariasImagens(msg.from, [
-            { caminho: 'C:/Users/Cliente/Documents/chatbot/imagens/OFERTADASEMANA.png', legenda: '👏🏻Confira nossas ofertas exclusivas! 🎉' },
-            { caminho: 'C:/Users/Cliente/Documents/chatbot/imagens/1.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
-            { caminho: 'C:/Users/Cliente/Documents/chatbot/imagens/2.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
-            { caminho: 'C:/Users/Cliente/Documents/chatbot/imagens/3.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
-            { caminho: 'C:/Users/Cliente/Documents/chatbot/imagens/4.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
+            { caminho: './imagens/OFERTADASEMANA.png', legenda: '👏🏻Confira nossas ofertas exclusivas! 🎉' },
+            { caminho: './imagens/1.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
+            { caminho: './imagens/2.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
+            { caminho: './imagens/3.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
+            { caminho: './imagens/4.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
         ]);
 
         await delay(12000000);
