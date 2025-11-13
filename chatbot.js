@@ -84,7 +84,7 @@ client.on('message', async msg => {
         ]);
 
         await chat.sendStateTyping();
-        await client.sendMessage(msg.from, '📝 Caso a lista já tenha sido enviada e você queira adicionar mais algum item ao seu pedido, por favor, utilize uma dessas palavras para nos avisar:\n\n ➕ *mais*, *adicionar*, *adiciona*, *coloca*, *acrescenta*, se deseja.\n ❌ *encerra*, *encerrar*, *pode encerrar*, *só isso*, *somente*, caso deseje encerrar seu pedido');
+        await client.sendMessage(msg.from, '📝 Nos informe sua lista de pedido ou caso a lista já tenha sido enviada e você queira adicionar mais algum item ao seu pedido, por favor, utilize uma dessas palavras para nos avisar:\n\n ➕ *mais*, *adicionar*, *adiciona*, *coloca*, *acrescenta*, se deseja.\n ❌ *encerra*, *encerrar*, *pode encerrar*, *só isso*, *somente*, caso deseje encerrar seu pedido');
 
         await delay(12000000);
         await client.sendMessage(msg.from, '🕒 Estamos à disposição caso precise de algo mais!');
@@ -200,6 +200,7 @@ client.on('message', async msg => {
         return;
     }
 });
+
 
 
 
