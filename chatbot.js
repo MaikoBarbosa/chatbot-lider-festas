@@ -49,6 +49,7 @@ client.on('message', async msg => {
     const texto = msg.body.trim().toLowerCase();
     const vendedor = ['Davy@c.us'];
 
+    // 👋 Mensagem inicial
     if (
         texto.includes('oi') ||
         texto.includes('ola') ||
@@ -61,12 +62,13 @@ client.on('message', async msg => {
     ) {
         const chat = await msg.getChat();
         const contact = await msg.getContact();
-        const name = contact.pushname;
+        const name = contact.pushname || contact.name || 'cliente';
+        const firstName = (name || 'cliente').split(' ')[0]; // <-- evita erro
 
         await delay(5000);
         await chat.sendStateTyping();
         await delay(3000);
-        await client.sendMessage(msg.from, 'Olá! ' + name.split(" ")[0] + ' 👋 Tudo bem? Seja bem-vindo(a)! 🎉');
+        await client.sendMessage(msg.from, `Olá! ${firstName} 👋 Tudo bem? Seja bem-vindo(a)! 🎉`);
         await delay(3000);
         await chat.sendStateTyping();
         await client.sendMessage(msg.from, '⏳ Líder Festas agradece por sua preferência! Estamos em atendimento. Aguarde um momento, jaja vamos lhe atender!. 💬');
@@ -80,7 +82,6 @@ client.on('message', async msg => {
             { caminho: './imagens/2.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
             { caminho: './imagens/3.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
             { caminho: './imagens/4.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
-            
         ]);
 
         await chat.sendStateTyping();
@@ -88,6 +89,7 @@ client.on('message', async msg => {
 
         await delay(12000000);
         await client.sendMessage(msg.from, '🕒 Estamos à disposição caso precise de algo mais!');
+        return;
     }
 
     // 🛒 Cliente quer continuar comprando
@@ -104,80 +106,80 @@ client.on('message', async msg => {
 
     // 🚚 Cliente escolhe ENTREGA
     if (texto.includes('entrega')) {
-    await client.sendMessage(msg.from, 'Perfeito! 🚚 Anotado que será *entrega*.\nEm alguns minutos será enviado o orçamento completo das suas compras.');
-    await delay(2000);
-    await client.sendMessage(msg.from, '📝 Após o envio do orçamento, por favor, nos informe:\n\n✅ *Tudo certo*, *correto* ou *confirmado*, se estiver tudo certo.\n⚠️ *Errado*, *tem erro*, *faltou* ou *alterar*, se precisar ajustar algo.\n\nAssim podemos finalizar seu pedido. 😉');
-    return;
+        await client.sendMessage(msg.from, 'Perfeito! 🚚 Anotado que será *entrega*.\nEm alguns minutos será enviado o orçamento completo das suas compras.');
+        await delay(2000);
+        await client.sendMessage(msg.from, '📝 Após o envio do orçamento, por favor, nos informe:\n\n✅ *Tudo certo*, *correto* ou *confirmado*, se estiver tudo certo.\n⚠️ *Errado*, *tem erro*, *faltou* ou *alterar*, se precisar ajustar algo.\n\nAssim podemos finalizar seu pedido. 😉');
+        return;
     }
 
     // 🏬 Cliente escolhe RETIRADA
     if (texto.includes('retirada') || texto.includes('retirar') || texto.includes('buscar')) {
-    await client.sendMessage(msg.from, 'Perfeito! 🏬 Anotado que será *retirada na loja*.\nEm alguns minutos será enviado o orçamento completo das suas compras.');
-    await delay(2000);
-    await client.sendMessage(msg.from, '📝 Após o envio do orçamento, por favor, nos informe:\n\n✅ *Tudo certo*, *correto* ou *confirmado*, se estiver tudo certo.\n⚠️ *Errado*, *tem erro*, *faltou* ou *alterar*, se precisar ajustar algo.\n\nAssim podemos finalizar seu pedido. 😉');
-    return;
-    }
-    
-    // ✅ Cliente confirma o orçamento (correto)
-    if (texto.includes('tudo certo') || texto.includes('correto') || texto.includes('confirmado')) {
-    await client.sendMessage(msg.from, 'Perfeito! 😊 Qual será a forma de pagamento? \n\n💰 *Pix*\n💵 *Dinheiro*\n💳 *Cartão*');
-    return;
+        await client.sendMessage(msg.from, 'Perfeito! 🏬 Anotado que será *retirada na loja*.\nEm alguns minutos será enviado o orçamento completo das suas compras.');
+        await delay(2000);
+        await client.sendMessage(msg.from, '📝 Após o envio do orçamento, por favor, nos informe:\n\n✅ *Tudo certo*, *correto* ou *confirmado*, se estiver tudo certo.\n⚠️ *Errado*, *tem erro*, *faltou* ou *alterar*, se precisar ajustar algo.\n\nAssim podemos finalizar seu pedido. 😉');
+        return;
     }
 
-    // ⚠️ Cliente diz que há algo errado no orçamento
-    if (texto.includes('errado') || texto.includes('tem erro') || texto.includes('faltou') || texto.includes('alterar')) {
-    await client.sendMessage(msg.from, 'Ah, entendi! 😅 Poderia me informar o que você gostaria de alterar no orçamento? ✏️');
-    estadoCliente[msg.from] = 'aguardando_alteracao';
-    return;
+    // ✅ Cliente confirma o orçamento
+    if (texto.includes('tudo certo') || texto.includes('correto') || texto.includes('confirmado')) {
+        await client.sendMessage(msg.from, 'Perfeito! 😊 Qual será a forma de pagamento? \n\n💰 *Pix*\n💵 *Dinheiro*\n💳 *Cartão*');
+        return;
     }
-    
+
+    // ⚠️ Cliente diz que há algo errado
+    if (texto.includes('errado') || texto.includes('tem erro') || texto.includes('faltou') || texto.includes('alterar')) {
+        await client.sendMessage(msg.from, 'Ah, entendi! 😅 Poderia me informar o que você gostaria de alterar no orçamento? ✏️');
+        estadoCliente[msg.from] = 'aguardando_alteracao';
+        return;
+    }
+
     // ✏️ Cliente informa o que deseja alterar
     if (estadoCliente[msg.from] === 'aguardando_alteracao') {
-    await client.sendMessage(msg.from, `Perfeito! 😊 Já anotei que deseja alterar: *${msg.body}*`);
-    await delay(2000);
-    await client.sendMessage(msg.from, 'E qual será a forma de pagamento? 💰 \n\n💰 *Pix*\n💵 *Dinheiro*\n💳 *Cartão*');
-    estadoCliente[msg.from] = null;
-    return;
+        await client.sendMessage(msg.from, `Perfeito! 😊 Já anotei que deseja alterar: *${msg.body}*`);
+        await delay(2000);
+        await client.sendMessage(msg.from, 'E qual será a forma de pagamento? 💰 \n\n💰 *Pix*\n💵 *Dinheiro*\n💳 *Cartão*');
+        estadoCliente[msg.from] = null;
+        return;
     }
 
     // 💸 PIX
     if (texto.includes('pix')) {
-    await client.sendMessage(msg.from, '🔑 Chave Pix para pagamento:\n📱 *CNPJ: 49.093.600/0001-30*\nNAYANDRA KELLY H SANTIAGO\n\nO valor informado já é com desconto à vista. 💰');
-    await delay(3000);
-    await client.sendMessage(msg.from, '🙏🎉 Agradecemos pela preferência! Lhe desejamos um ótimo dia. 💜');
-    return;
+        await client.sendMessage(msg.from, '🔑 Chave Pix para pagamento:\n📱 *CNPJ: 49.093.600/0001-30*\nNAYANDRA KELLY H SANTIAGO\n\nO valor informado já é com desconto à vista. 💰');
+        await delay(3000);
+        await client.sendMessage(msg.from, '🙏🎉 Agradecemos pela preferência! Lhe desejamos um ótimo dia. 💜');
+        return;
     }
 
     // 💵 Pagamento em Dinheiro
     if (texto.includes('dinheiro')) {
-    await client.sendMessage(msg.from, 'Certo! Deseja que leve troco? 💵 (Responda com "sim" ou "não")');
-    estadoCliente[msg.from] = 'perguntou_troco';
-    return;
+        await client.sendMessage(msg.from, 'Certo! Deseja que leve troco? 💵 (Responda com "sim" ou "não")');
+        estadoCliente[msg.from] = 'perguntou_troco';
+        return;
     }
 
     // 🪙 Cliente confirma que quer troco
     if (texto.includes('sim') && estadoCliente[msg.from] === 'perguntou_troco') {
-    await client.sendMessage(msg.from, 'Ok! Pode me informar o valor para o qual precisa de troco? 💰');
-    estadoCliente[msg.from] = 'aguardando_valor_troco';
-    return;
+        await client.sendMessage(msg.from, 'Ok! Pode me informar o valor para o qual precisa de troco? 💰');
+        estadoCliente[msg.from] = 'aguardando_valor_troco';
+        return;
     }
 
     // 🚫 Cliente diz que não quer troco
     if (texto.includes('não') && estadoCliente[msg.from] === 'perguntou_troco') {
-    await client.sendMessage(msg.from, 'Perfeito! O valor já considera o desconto para pagamento à vista. 💰');
-    await delay(2000);
-    await client.sendMessage(msg.from, '🙏🎉 Agradecemos pela preferência! Lhe desejamos um ótimo dia. 💜');
-    estadoCliente[msg.from] = null;
-    return;
+        await client.sendMessage(msg.from, 'Perfeito! O valor já considera o desconto para pagamento à vista. 💰');
+        await delay(2000);
+        await client.sendMessage(msg.from, '🙏🎉 Agradecemos pela preferência! Lhe desejamos um ótimo dia. 💜');
+        estadoCliente[msg.from] = null;
+        return;
     }
 
     // 💰 Cliente informa o valor do troco
     if (estadoCliente[msg.from] === 'aguardando_valor_troco') {
-    await client.sendMessage(msg.from, `Certo! Levaremos troco para ${texto}. 💵`);
-    await delay(2000);
-    await client.sendMessage(msg.from, '🙏🎉 Agradecemos pela preferência! Lhe desejamos um ótimo dia. 💜');
-    estadoCliente[msg.from] = null;
-    return;
+        await client.sendMessage(msg.from, `Certo! Levaremos troco para ${msg.body}. 💵`);
+        await delay(2000);
+        await client.sendMessage(msg.from, '🙏🎉 Agradecemos pela preferência! Lhe desejamos um ótimo dia. 💜');
+        estadoCliente[msg.from] = null;
+        return;
     }
 
     // 💳 Cartão
@@ -200,8 +202,3 @@ client.on('message', async msg => {
         return;
     }
 });
-
-
-
-
-
