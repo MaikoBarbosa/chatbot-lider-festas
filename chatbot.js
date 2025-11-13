@@ -69,7 +69,7 @@ client.on('message', async msg => {
         await client.sendMessage(msg.from, 'Olá! ' + name.split(" ")[0] + ' 👋 Tudo bem? Seja bem-vindo(a)! 🎉');
         await delay(3000);
         await chat.sendStateTyping();
-        await client.sendMessage(msg.from, '⏳ Líder Festas agradece seu contato! Estamos em atendimento. Aguarde um momento. 💬');
+        await client.sendMessage(msg.from, '⏳ Líder Festas agradece por sua preferência! Estamos em atendimento. Aguarde um momento, jaja vamos lhe atender!. 💬');
         await delay(3000);
         await chat.sendStateTyping();
         await client.sendMessage(msg.from, 'Enquanto isso, confira nossas ofertas 👇🏻');
@@ -80,6 +80,10 @@ client.on('message', async msg => {
             { caminho: './imagens/2.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
             { caminho: './imagens/3.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
             { caminho: './imagens/4.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
+            
+        await chat.sendStateTyping();
+        await client.sendMessage(msg.from, '📝 Deseja acrescentar mais algum item ao seu pedido?\n\n😉 *mais*, *adicionar*, *adiciona*, *coloca*, *acrescenta*, se deseja.\n *encerra*, *encerrar*, *pode encerrar*, *só isso*, *somente*, caso deseje encerrar seu pedido');
+            
         ]);
 
         await delay(12000000);
@@ -196,4 +200,5 @@ client.on('message', async msg => {
         return;
     }
 });
+
 
