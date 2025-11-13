@@ -81,10 +81,10 @@ client.on('message', async msg => {
             { caminho: './imagens/3.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
             { caminho: './imagens/4.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
             
-        await chat.sendStateTyping();
-        await client.sendMessage(msg.from, '📝 Deseja acrescentar mais algum item ao seu pedido?\n\n😉 *mais*, *adicionar*, *adiciona*, *coloca*, *acrescenta*, se deseja.\n *encerra*, *encerrar*, *pode encerrar*, *só isso*, *somente*, caso deseje encerrar seu pedido');
-            
         ]);
+
+        await chat.sendStateTyping();
+        await client.sendMessage(msg.from, '📝 Deseja acrescentar mais algum item ao seu pedido?\n\n😉 ➕ *mais*, *adicionar*, *adiciona*, *coloca*, *acrescenta*, se deseja.\n ✖️ *encerra*, *encerrar*, *pode encerrar*, *só isso*, *somente*, caso deseje encerrar seu pedido');
 
         await delay(12000000);
         await client.sendMessage(msg.from, '🕒 Estamos à disposição caso precise de algo mais!');
@@ -200,5 +200,6 @@ client.on('message', async msg => {
         return;
     }
 });
+
 
 
