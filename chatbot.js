@@ -343,3 +343,51 @@ client.on("message", async (msg) => {
         return;
     }
 });
+
+
+
+// ==========================================
+// 🔥 SISTEMA DE ESTABILIDADE 24H (OPÇÃO A)
+// ==========================================
+
+// Marca o último momento em que o bot recebeu mensagem
+let ultimoPing = Date.now();
+
+// Atualiza quando chega qualquer mensagem
+client.on("message", () => {
+    ultimoPing = Date.now();
+});
+
+// Checagem a cada 30 segundos
+setInterval(async () => {
+    const agora = Date.now();
+
+    // Se passou mais de 3 minutos sem mensagens -> testamos o WhatsApp
+    if (agora - ultimoPing > 180000) {
+        console.log("🔄 Nenhuma mensagem em 3 minutos. Testando conexão...");
+
+        try {
+            await client.sendPresenceAvailable(); // PING
+            console.log("🟢 WhatsApp respondeu ao ping.");
+            ultimoPing = Date.now();
+        } catch (e) {
+            console.log("❌ WhatsApp travado! Reiniciando cliente...");
+            reiniciarWhatsApp();
+        }
+    }
+}, 30000);
+
+// Função para reiniciar cliente WhatsApp sem perder sessão
+async function reiniciarWhatsApp() {
+    try {
+        console.log("⚠️ Reiniciando cliente WhatsApp...");
+
+        await client.destroy();
+        await delay(3000);
+
+        client.initialize();
+        console.log("🔁 Cliente WhatsApp reiniciado com sucesso!");
+    } catch (erro) {
+        console.error("🚨 Erro ao reiniciar WhatsApp:", erro);
+    }
+}
