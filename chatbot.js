@@ -119,7 +119,7 @@ client.on("message", async (msg) => {
 
         await client.sendMessage(
             msg.from,
-            "📝 Nos envie sua lista de pedidos.\n\n➕ Para adicionar itens use: *mais*, *adicionar*, *coloca*, *acrescenta*\n❌ Para encerrar use: *encerrar*, *pode encerrar*, *só isso*, *somente*"
+            "📝 Envie-nos sua lista de pedido\n\n➕ Para adicionar mais itens use: \n\n*  ▶️ mais*, *adicionar*, *coloca*, *acrescenta*\n\n❌ Para encerrar use: \n\n*  ▶️ encerrar*, *pode encerrar*, *só isso*, *somente*"
         );
 
         return;
@@ -153,7 +153,7 @@ client.on("message", async (msg) => {
 
         await client.sendMessage(
             msg.from,
-            "➕ Para adicionar itens use: *mais*, *adicionar*, *coloca*, *acrescenta*\n❌ Para encerrar use: *encerrar*, *pode encerrar*, *só isso*, *somente*"
+            "➕ Para adicionar mais itens use:\n\n*  ▶️ mais*, *adicionar*, *coloca*, *acrescenta*\n\n❌ Para encerrar seu pedido use:\n\n*  ▶️ encerrar*, *pode encerrar*, *só isso*, *somente*"
         );
 
         estadoCliente[msg.from] = null;
