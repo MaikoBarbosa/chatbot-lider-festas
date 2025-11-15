@@ -347,7 +347,7 @@ client.on("message", async (msg) => {
 
         await client.sendMessage(
             msg.from,
-            "🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜\n\n Acompanhe-nos no Instagram! https://www.instagram.com/liderfestasaracati?igsh=MWw5NTRuOHp4bndkaA=="
+            "🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜"
         );
         return;
     }
@@ -366,7 +366,7 @@ client.on("message", async (msg) => {
 
         await client.sendMessage(
             msg.from,
-            "🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜\n\n Acompanhe-nos no Instagram! https://www.instagram.com/liderfestasaracati?igsh=MWw5NTRuOHp4bndkaA=="
+            "🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜"
         );
         return;
     }
