@@ -56,6 +56,14 @@ let estadoCliente = {};
 
 // 🔥 Todas as respostas do bot
 client.on("message", async (msg) => {
+    const chat = await msg.getChat();
+
+    // 🔥🔥🔥 BLOQUEIO: SE A MENSAGEM VIER DE UM GRUPO → NÃO RESPONDE
+    if (chat.isGroup) {
+        console.log("Mensagem ignorada (veio de um GRUPO):", chat.name);
+        return;
+    }
+
     const texto = msg.body.trim().toLowerCase();
 
     // Saudações
@@ -117,7 +125,7 @@ client.on("message", async (msg) => {
         return;
     }
 
-    // Cliente quer adicionar
+    // 🔥 CLIENTE QUER ADICIONAR
     if (
         texto.includes("mais") ||
         texto.includes("adicionar") ||
@@ -129,6 +137,26 @@ client.on("message", async (msg) => {
             msg.from,
             "Perfeito! 😄 Pode me enviar o que mais deseja adicionar ao seu pedido."
         );
+
+        estadoCliente[msg.from] = "aguardando_item";
+        return;
+    }
+
+    // 🔥 NOVA FUNÇÃO — CLIENTE ENVIA O ITEM PARA ADICIONAR
+    if (estadoCliente[msg.from] === "aguardando_item") {
+        await client.sendMessage(
+            msg.from,
+            `Perfeito! 😊 Já anotei que deseja adicionar: *${msg.body}*`
+        );
+
+        await delay(1500);
+
+        await client.sendMessage(
+            msg.from,
+            "➕ Para adicionar itens use: *mais*, *adicionar*, *coloca*, *acrescenta*\n❌ Para encerrar use: *encerrar*, *pode encerrar*, *só isso*, *somente*"
+        );
+
+        estadoCliente[msg.from] = null;
         return;
     }
 
