@@ -119,7 +119,7 @@ client.on("message", async (msg) => {
 
         await client.sendMessage(
             msg.from,
-            "📝 Envie-nos sua lista de pedido\n\n➕ Para adicionar mais itens use: \n\n*  ▶️ mais*, *adicionar*, *coloca*, *acrescenta*\n\n❌ Para encerrar use: \n\n*  ▶️ encerrar*, *pode encerrar*, *só isso*, *somente*"
+            "📝 Envie-nos sua lista de pedido\n\n➕ Para adicionar mais itens use: \n\n*  ▶️ mais*, *adicionar*, *coloca*, *acrescenta*\n\n❌ Para encerrar use: \n\n*  ▶️ encerrar*, *pode encerrar*, *só*, *só isso*, *somente*"
         );
 
         return;
