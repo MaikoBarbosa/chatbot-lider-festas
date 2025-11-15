@@ -119,7 +119,7 @@ client.on("message", async (msg) => {
 
         await client.sendMessage(
             msg.from,
-            "📝 Envie-nos sua lista de pedido\n\n➕ Para adicionar mais itens use: \n\n*  ▶️ mais*, *adicionar*, *coloca*, *acrescenta*\n\n❌ Para encerrar use: \n\n*  ▶️ encerrar*, *pode encerrar*, *só*, *só isso*, *somente*"
+            "📝 Envie-nos sua lista de pedido\n\n➕ Para adicionar mais itens use:\n\n▶️ *mais*, *adicionar*, *coloca*, *acrescenta*\n\n❌ Para encerrar use:\n\n▶️ *encerrar*, *pode encerrar*, *só*, *só isso*, *somente*"
         );
 
         return;
@@ -153,7 +153,7 @@ client.on("message", async (msg) => {
 
         await client.sendMessage(
             msg.from,
-            "➕ Para adicionar mais itens use:\n\n*  ▶️ mais*, *adicionar*, *coloca*, *acrescenta*\n\n❌ Para encerrar seu pedido use:\n\n*  ▶️ encerrar*, *pode encerrar*, *só isso*, *somente*"
+            "➕ Para adicionar mais itens use:\n\n▶️ *mais*, *adicionar*, *coloca*, *acrescenta*\n\n❌ Para encerrar seu pedido use:\n\n▶️ *encerrar*, *pode encerrar*, *só isso*, *somente*"
         );
 
         estadoCliente[msg.from] = null;
@@ -347,7 +347,7 @@ client.on("message", async (msg) => {
 
         await client.sendMessage(
             msg.from,
-            "🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜"
+            "🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜\n\n Acompanhe-nos no Instagram! https://www.instagram.com/liderfestasaracati?igsh=MWw5NTRuOHp4bndkaA=="
         );
         return;
     }
@@ -366,7 +366,7 @@ client.on("message", async (msg) => {
 
         await client.sendMessage(
             msg.from,
-            "🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜"
+            "🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜\n\n Acompanhe-nos no Instagram! https://www.instagram.com/liderfestasaracati?igsh=MWw5NTRuOHp4bndkaA=="
         );
         return;
     }
