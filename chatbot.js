@@ -191,7 +191,6 @@ async function enviarListaPendentes() {
 
 // ----------------------------
 // Mensagem fora do horário
-// ----------------------------
 const MSG_FORA_HORARIO =
 `Olá! 👋 Tudo bem? Seja bem-vindo(a)! 🎉
 ⏳ Líder Festas agradece por sua preferência!
@@ -201,13 +200,21 @@ const MSG_FORA_HORARIO =
 ⏰ 7:30 às 13:00 hrs, aos sábados;
 ⏰ Fechado aos domingos.`;
 
+// 🔴 🔴 🔴 DESATIVANDO A FUNÇÃO DE FORA DO HORÁRIO 🔴 🔴 🔴
+// Basta comentar todo o bloco abaixo:
+
+// async function enviarForaHorarioSeNecessario(chatId) {
+//     const info = getHorarioInfo(new Date());
+//     if (!info.open) {
+//         await sendMessageAndTrack(chatId, MSG_FORA_HORARIO);
+//         return true; // enviou mensagem
+//     }
+//     return false; // não enviou nada
+// }
+
+// Agora essa função não funciona mais, mas o BOT continua funcionando normalmente.
 async function enviarForaHorarioSeNecessario(chatId) {
-    const info = getHorarioInfo(new Date());
-    if (!info.open) {
-        await sendMessageAndTrack(chatId, MSG_FORA_HORARIO);
-        return true; // enviou mensagem
-    }
-    return false; // não enviou nada
+    return false; // sempre libera o fluxo como se estivesse dentro do horário
 }
 
 // ----------------------------
