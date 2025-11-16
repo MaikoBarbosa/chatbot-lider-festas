@@ -3,16 +3,12 @@ import fs from 'fs-extra'
 
 // URL do seu projeto Supabase
 const supabaseUrl = 'https://lxvtuyvvnxggshtgzlny.supabase.co'
-// A chave vem da variável de ambiente no Railway
+// Chave vindo da variável de ambiente no Railway
 const supabaseKey = process.env.SUPABASE_KEY
 
-const supabase = createClient(supabaseUrl, supabaseKey)
+export const supabase = createClient(supabaseUrl, supabaseKey)
 
-// ==========================
-// Sessão WhatsApp
-// ==========================
-
-// Função para salvar a sessão do WhatsApp no Supabase
+// Função para salvar sessão WhatsApp
 export async function salvarSessao() {
     if (!fs.existsSync('.wwebjs_auth')) return
 
@@ -25,7 +21,7 @@ export async function salvarSessao() {
     console.log('Sessão salva no Supabase ✅')
 }
 
-// Função para carregar a sessão do Supabase
+// Função para carregar sessão WhatsApp
 export async function carregarSessao() {
     const { data } = await supabase.storage.from('whatsapp-session').list()
     if (!data) return
@@ -38,28 +34,4 @@ export async function carregarSessao() {
         fs.writeFileSync(`.wwebjs_auth/${file.name}`, buffer)
     }
     console.log('Sessão carregada do Supabase ✅')
-}
-
-// ==========================
-// Endereços de entrega
-// ==========================
-
-// Salvar ou atualizar endereço do cliente
-export async function salvarEndereco(chatId, endereco) {
-    const { data, error } = await supabase
-        .from('enderecos')
-        .upsert({ id: chatId, endereco })
-    if (error) console.error('Erro ao salvar endereço:', error)
-    return data
-}
-
-// Buscar endereço de um cliente
-export async function buscarEndereco(chatId) {
-    const { data, error } = await supabase
-        .from('enderecos')
-        .select('endereco')
-        .eq('id', chatId)
-        .single()
-    if (error) return null
-    return data?.endereco || null
 }
