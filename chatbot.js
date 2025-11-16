@@ -1,258 +1,265 @@
-import pkg from 'whatsapp-web.js';
-const { Client, LocalAuth, MessageMedia } = pkg;
+// ----------------------------
+// IMPORTS
+// ----------------------------
+const qrcode = require("qrcode-terminal");
+const { Client, MessageMedia } = require("whatsapp-web.js"); // CommonJS import
+const express = require("express");
+const fs = require("fs-extra");
+const path = require("path");
+const { supabase, salvarSessao, carregarSessao } = require("./supabase"); // arquivo supabase.js
 
-import express from 'express';
-import fs from 'fs';
-import path from 'path';
-import { createClient } from '@supabase/supabase-js';
-
+// ----------------------------
+// SERVIDOR HTTP
+// ----------------------------
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ----------------------------
-// Supabase
-// ----------------------------
-const supabaseUrl = 'https://lxvtuyvvnxggshtgzlny.supabase.co';
-const supabaseKey = process.env.SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// ----------------------------
-// Servidor HTTP
-// ----------------------------
-app.get('/', (req, res) => {
-  res.send('🚀 Bot do WhatsApp está rodando!');
+app.get("/", (req, res) => {
+    res.send("🚀 Bot do WhatsApp está rodando no Railway!");
 });
 
-app.listen(port, () => console.log(`🌐 Servidor ativo na porta ${port}`));
+app.listen(port, () =>
+    console.log(`🌐 Servidor ativo no Railway, porta ${port}`)
+);
 
 // ----------------------------
-// Inicialização do WhatsApp
+// CLIENTE WHATSAPP
 // ----------------------------
 const client = new Client({
-  authStrategy: new LocalAuth(),
-  puppeteer: { args: ['--no-sandbox', '--disable-setuid-sandbox'], headless: true },
+    authStrategy: undefined, // sessão será carregada pelo Supabase
+    puppeteer: { args: ["--no-sandbox", "--disable-setuid-sandbox"], headless: true },
 });
 
-client.on('qr', qr => console.log(qr));
-client.on('ready', () => console.log('✅ Bot conectado!'));
+client.on("qr", (qr) => {
+    console.log("===========================================");
+    console.log("🟢 ESCANEIE ESTE QR CODE (em texto):");
+    console.log(qr);
+    console.log("===========================================");
+});
+
+client.on("ready", async () => {
+    console.log("✅ Bot conectado ao WhatsApp com sucesso!");
+    await carregarSessao();
+});
+
 client.initialize();
 
 // ----------------------------
-// Função delay
+// FUNÇÃO DELAY
 // ----------------------------
-const delay = ms => new Promise(res => setTimeout(res, ms));
+const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 
 // ----------------------------
-// Enviar imagens
+// ENVIAR IMAGENS
 // ----------------------------
 async function enviarImagem(numero, caminho, legenda) {
-  const media = MessageMedia.fromFilePath(caminho);
-  await client.sendMessage(numero, media, { caption: legenda });
+    const media = MessageMedia.fromFilePath(caminho);
+    await client.sendMessage(numero, media, { caption: legenda });
 }
 
 async function enviarVariasImagens(numero, imagens) {
-  for (const item of imagens) {
-    await enviarImagem(numero, item.caminho, item.legenda);
-    await delay(3000);
-  }
+    for (const item of imagens) {
+        await enviarImagem(numero, item.caminho, item.legenda);
+        await delay(3000);
+    }
 }
 
 // ----------------------------
-// Variáveis globais
+// VARIÁVEIS DE ESTADO
 // ----------------------------
 let estadoCliente = {};
-let atendimentos = {}; // controle de mensagens pendentes
+let enderecos = {}; // endereço em memória para evitar múltiplas perguntas
+let ultimoClienteAtivo = null;
+let atendimentos = {}; // lista de clientes pendentes
 
 // ----------------------------
-// Funções Supabase Endereço
+// FUNÇÕES AUXILIARES
 // ----------------------------
-async function getEndereco(chatId) {
-  const { data, error } = await supabase
-    .from('enderecos')
-    .select('endereco')
-    .eq('chatId', chatId)
-    .single();
-  if (error) return null;
-  return data ? data.endereco : null;
+function ensureAtendimento(chatId) {
+    if (!atendimentos[chatId]) atendimentos[chatId] = { respondido: false, lastMessage: "", firstContactAt: Date.now() };
 }
 
-async function saveEndereco(chatId, endereco) {
-  const { data: exists } = await supabase
-    .from('enderecos')
-    .select('*')
-    .eq('chatId', chatId)
-    .single();
-  if (exists) {
-    await supabase.from('enderecos').update({ endereco }).eq('chatId', chatId);
-  } else {
-    await supabase.from('enderecos').insert([{ chatId, endereco }]);
-  }
-}
-
-// ----------------------------
-// Lista de pendentes
-// ----------------------------
 function marcarPendente(chatId, lastMsg) {
-  atendimentos[chatId] = { respondido: false, lastMessage: lastMsg };
+    ensureAtendimento(chatId);
+    atendimentos[chatId].respondido = false;
+    atendimentos[chatId].lastMessage = lastMsg || "";
 }
 
 function marcarAtendido(chatId) {
-  if (atendimentos[chatId]) atendimentos[chatId].respondido = true;
+    ensureAtendimento(chatId);
+    atendimentos[chatId].respondido = true;
 }
 
-async function enviarListaPendentes() {
-  const pendentes = Object.keys(atendimentos).filter(c => !atendimentos[c].respondido);
-  if (!pendentes.length) {
-    await client.sendMessage('5588921552690@c.us', '✅ Nenhum cliente pendente no momento.');
-    return;
-  }
-  let texto = '📋 *LISTA DE CLIENTES PENDENTES:*\n\n';
-  pendentes.forEach(c => texto += `• ${c.replace('@c.us', '')} — *PENDENTE*\n`);
-  await client.sendMessage('5588921552690@c.us', texto);
+async function enviarListaPendentes(vendedor) {
+    const pend = Object.keys(atendimentos).filter(c => !atendimentos[c].respondido);
+    if (pend.length === 0) {
+        await client.sendMessage(vendedor, "✅ Nenhum cliente pendente no momento.");
+        return;
+    }
+    let texto = "📋 *LISTA DE CLIENTES PENDENTES:*\n\n";
+    pend.forEach(c => texto += `• ${c.replace("@c.us", "")} — *PENDENTE*\n`);
+    await client.sendMessage(vendedor, texto);
 }
 
 // ----------------------------
-// Handler principal
+// FUNÇÕES DE ENDEREÇO
 // ----------------------------
-client.on('message', async msg => {
-  const chat = await msg.getChat();
-  if (chat.isGroup) return;
-
-  const chatId = chat.id._serialized;
-  const texto = (msg.body || '').trim().toLowerCase();
-  marcarPendente(chatId, msg.body);
-  await enviarListaPendentes();
-
-  // ----------------------
-  // Saudação
-  // ----------------------
-  if (/oi|ola|olá|bom dia|boa tarde|boa noite/.test(texto)) {
-    await delay(2000); await chat.sendStateTyping();
-    await client.sendMessage(chatId, 'Olá! 👋 Tudo bem? Seja bem-vindo(a)! 🎉');
-    await delay(2500); await chat.sendStateTyping();
-    await client.sendMessage(chatId, '⏳ Líder Festas agradece por sua preferência! Estamos em atendimento. Aguarde só um momento! 💬');
-    await delay(2500); await chat.sendStateTyping();
-    await client.sendMessage(chatId, 'Enquanto isso, confira nossas ofertas 👇🏻');
-    await enviarVariasImagens(chatId, [
-      { caminho: './imagens/OFERTADASEMANA.png', legenda: '👏🏻Confira nossas ofertas exclusivas! 🎉' },
-      { caminho: './imagens/1.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
-      { caminho: './imagens/2.png', legenda: '👏🏻Gostaria de levar um de nossos produtos? 🎉' },
-    ]);
-    await client.sendMessage(chatId, 'ℹ️ Como podemos lhe ajudar ?');
-    await client.sendMessage(chatId,
-      '📝 Caso deseje fazer um pedido envie-nos sua lista.\n\n' +
-      '▶️ Para adicionar itens use: Adicionar➕\n' +
-      '▶️ Para encerrar use: Encerrar❌'
-    );
-    return;
-  }
-
-  // ----------------------
-  // Adicionar itens
-  // ----------------------
-  if (estadoCliente[chatId] === 'aguardando_item') {
-    await client.sendMessage(chatId, 'Perfeito! 😄 Deseja adicionar algo no seu pedido ou podemos encerrar?');
-    estadoCliente[chatId] = null;
-    return;
-  }
-
-  if (/mais|adicionar|adiciona|coloca|acrescenta/.test(texto)) {
-    await client.sendMessage(chatId, 'Perfeito! 😄 Pode me enviar o que mais deseja adicionar ao seu pedido.');
-    estadoCliente[chatId] = 'aguardando_item';
-    return;
-  }
-
-  // ----------------------
-  // Encerrar pedido
-  // ----------------------
-  if (/encerrar|pode encerrar|só|só isso|somente/.test(texto)) {
-    // Verifica se já existe endereço
-    const enderecoSalvo = await getEndereco(chatId);
-    if (enderecoSalvo) {
-      await client.sendMessage(chatId, `O endereço salvo é: ${enderecoSalvo}. Deseja alterar ou manter?`);
-      estadoCliente[chatId] = 'confirma_endereco';
+async function perguntarEndereco(chatId) {
+    if (enderecos[chatId]) {
+        await client.sendMessage(chatId, `ℹ️ Já temos este endereço salvo: *${enderecos[chatId]}*\nDeseja alterar ou manter? (Responda: Alterar / Manter)`);
+        estadoCliente[chatId] = "confirmar_endereco";
     } else {
-      await client.sendMessage(chatId, 'Certo! 😊 Só pra confirmar, será *entrega na loja* ou *retirada*?');
+        await client.sendMessage(chatId, "📍 Qual é o endereço para entrega?");
+        estadoCliente[chatId] = "aguardando_endereco";
     }
-    return;
-  }
+}
 
-  // ----------------------
-  // Confirmar endereço
-  // ----------------------
-  if (estadoCliente[chatId] === 'confirma_endereco') {
-    if (/alterar/.test(texto)) {
-      await client.sendMessage(chatId, 'Ok! Por favor informe o novo endereço:');
-      estadoCliente[chatId] = 'novo_endereco';
-    } else if (/manter/.test(texto)) {
-      await client.sendMessage(chatId, 'Perfeito! Seguindo com o endereço salvo.');
-      estadoCliente[chatId] = null;
+async function salvarEndereco(chatId, endereco) {
+    enderecos[chatId] = endereco;
+    // salvar no Supabase
+    await supabase.from("enderecos").upsert({ chat_id: chatId, endereco });
+}
+
+// ----------------------------
+// FLUXO PRINCIPAL
+// ----------------------------
+client.on("message", async (msg) => {
+    try {
+        const chat = await msg.getChat();
+        if (chat.isGroup) return;
+
+        const chatId = msg.from;
+        ultimoClienteAtivo = chatId;
+        const texto = (msg.body || "").trim().toLowerCase();
+
+        // MARCAR CLIENTE PENDENTE
+        marcarPendente(chatId, msg.body || "");
+        await enviarListaPendentes("5588921552690@c.us"); // número do vendedor
+
+        // SAUDAÇÃO
+        if (texto.match(/oi|ola|olá|bom dia|boa tarde|boa noite/)) {
+            await delay(2000);
+            await chat.sendStateTyping();
+            await client.sendMessage(chatId, "Olá! 👋 Tudo bem? Seja bem-vindo(a)! 🎉");
+            await delay(2000);
+            await chat.sendMessage(chatId, "⏳ Líder Festas agradece por sua preferência! Estamos em atendimento. Aguarde só um momento! 💬");
+            await delay(2000);
+            await client.sendMessage(chatId, "Enquanto isso, confira nossas ofertas 👇🏻");
+
+            await enviarVariasImagens(chatId, [
+                { caminho: "./imagens/OFERTADASEMANA.png", legenda: "👏🏻Confira nossas ofertas exclusivas! 🎉" },
+                { caminho: "./imagens/1.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" },
+                { caminho: "./imagens/2.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" }
+            ]);
+
+            await client.sendMessage(chatId, "ℹ️ Como podemos lhe ajudar ?");
+            await client.sendMessage(chatId,
+                "📝 Caso deseje fazer um pedido envie-nos sua lista.\n\n" +
+                "▶️ Para adicionar itens use: Adicionar➕\n" +
+                "▶️ Para encerrar use: Encerrar❌"
+            );
+            return;
+        }
+
+        // ADICIONAR ITENS
+        if (texto.match(/mais|adicionar|adiciona|coloca|acrescenta/)) {
+            await client.sendMessage(chatId, "Perfeito! 😄 Deseja adicionar algo no seu pedido ou podemos encerrar?");
+            estadoCliente[chatId] = "aguardando_item";
+            return;
+        }
+
+        if (estadoCliente[chatId] === "aguardando_item") {
+            // aqui pode repetir adicionar/encerrar
+            await client.sendMessage(chatId, "Ótimo! Item anotado: " + msg.body);
+            estadoCliente[chatId] = null;
+            return;
+        }
+
+        // ENCERRAR PEDIDO
+        if (texto.match(/encerrar|pode encerrar|só isso|somente|encerra/)) {
+            await client.sendMessage(chatId, "Certo! 😊 Só pra confirmar, será *retirada na loja* ou *entrega*?");
+            estadoCliente[chatId] = "aguardando_tipo_entrega";
+            return;
+        }
+
+        // TIPO ENTREGA/RETIRADA
+        if (estadoCliente[chatId] === "aguardando_tipo_entrega") {
+            if (texto.includes("entrega")) {
+                await perguntarEndereco(chatId);
+                estadoCliente[chatId] = "entrega";
+            } else if (texto.match(/retirada|retirar|buscar|pegar/)) {
+                await client.sendMessage(chatId, "Perfeito! 🏬 Anotado que será *retirada na loja*.");
+                await delay(1500);
+                await client.sendMessage(chatId,
+                    "📝 Após o envio do orçamento, responda:\n\n✅ Tudo certo\n⚠️ Errado\n\nAssim podemos finalizar seu pedido. 😉"
+                );
+                estadoCliente[chatId] = "retirada";
+            }
+            return;
+        }
+
+        // ENDEREÇO ENTREGA
+        if (estadoCliente[chatId] === "aguardando_endereco") {
+            await salvarEndereco(chatId, msg.body);
+            await client.sendMessage(chatId, `Endereço recebido: *${msg.body}*`);
+            await delay(1500);
+            await client.sendMessage(chatId,
+                "📝 Após o envio do orçamento, responda:\n\n✅ Tudo certo\n⚠️ Errado\n\nAssim podemos finalizar seu pedido. 😉"
+            );
+            estadoCliente[chatId] = "entrega";
+            return;
+        }
+
+        // CONFIRMAR OU ALTERAR ENDEREÇO
+        if (estadoCliente[chatId] === "confirmar_endereco") {
+            if (texto.includes("manter")) {
+                await client.sendMessage(chatId, `Perfeito! Mantemos o endereço: *${enderecos[chatId]}*`);
+            } else if (texto.includes("alterar")) {
+                await client.sendMessage(chatId, "📍 Qual é o novo endereço?");
+                estadoCliente[chatId] = "aguardando_endereco";
+            }
+            return;
+        }
+
+        // ORÇAMENTO
+        if (texto.match(/tudo certo|correto|confirmado/)) {
+            await client.sendMessage(chatId, "Perfeito! 😊 Qual será a forma de pagamento?\n\n💰 Pix\n💵 Dinheiro\n💳 Cartão");
+            return;
+        }
+
+        if (texto.match(/errado|incorreto|ajustar|corrigir|faltou/)) {
+            await client.sendMessage(chatId, "Certo! 😅 Me informe o que deseja alterar no orçamento. ✏️");
+            estadoCliente[chatId] = "aguardando_alteracao";
+            return;
+        }
+
+        if (estadoCliente[chatId] === "aguardando_alteracao") {
+            await client.sendMessage(chatId, `Perfeito! 😊 Já anotei a alteração: ${msg.body}`);
+            await delay(1500);
+            await client.sendMessage(chatId, "Agora escolha a forma de pagamento:\n💰 Pix\n💵 Dinheiro\n💳 Cartão");
+            estadoCliente[chatId] = null;
+            return;
+        }
+
+        // PAGAMENTO
+        if (texto.includes("pix")) {
+            await client.sendMessage(chatId, "🔑 Chave Pix:\n📱 *CNPJ: 49.093.600/0001-30*\nNAYANDRA KELLY H SANTIAGO");
+            return;
+        }
+
+        if (texto.includes("dinheiro")) {
+            await client.sendMessage(chatId, "💵 Pagamento em dinheiro registrado. Obrigado! 🙏");
+            return;
+        }
+
+        if (texto.includes("cartão") || texto.includes("cartao")) {
+            await client.sendMessage(chatId,
+                "💳 Parcelamos em 2x para compras acima de R$100 e 3x para valores acima de R$150.\nObs: Valor parcelado não tem desconto."
+            );
+            return;
+        }
+
+    } catch (err) {
+        console.error("Erro no handler de mensagem:", err);
     }
-    return;
-  }
-
-  if (estadoCliente[chatId] === 'novo_endereco') {
-    await saveEndereco(chatId, msg.body);
-    await client.sendMessage(chatId, `Endereço atualizado para: ${msg.body}`);
-    estadoCliente[chatId] = null;
-    return;
-  }
-
-  // ----------------------
-  // Entrega / Retirada
-  // ----------------------
-  if (/entrega/.test(texto)) {
-    const enderecoSalvo = await getEndereco(chatId);
-    if (enderecoSalvo) {
-      await client.sendMessage(chatId, `O endereço salvo é: ${enderecoSalvo}. Deseja alterar ou manter?`);
-      estadoCliente[chatId] = 'confirma_endereco';
-    } else {
-      await client.sendMessage(chatId, 'Qual o endereço para entrega?');
-      estadoCliente[chatId] = 'novo_endereco';
-    }
-    return;
-  }
-
-  if (/retirada|retirar|buscar|pegar/.test(texto)) {
-    await client.sendMessage(chatId, 'Perfeito! 🏬 Será retirada na loja.');
-    return;
-  }
-
-  // ----------------------
-  // Orçamento
-  // ----------------------
-  if (/tudo certo|correto|confirmado/.test(texto)) {
-    await client.sendMessage(chatId, 'Perfeito! 😊 Qual será a forma de pagamento?\n💰 Pix\n💵 Dinheiro\n💳 Cartão');
-    return;
-  }
-
-  if (/errado|incorreto|ajustar|corrigir|faltou/.test(texto)) {
-    await client.sendMessage(chatId, 'Certo! 😅 Me informe o que deseja alterar no orçamento.');
-    estadoCliente[chatId] = 'aguardando_alteracao';
-    return;
-  }
-
-  if (estadoCliente[chatId] === 'aguardando_alteracao') {
-    await client.sendMessage(chatId, `Perfeito! 😊 Já anotei: ${msg.body}\nQual será a forma de pagamento?\n💰 Pix\n💵 Dinheiro\n💳 Cartão`);
-    estadoCliente[chatId] = null;
-    return;
-  }
-
-  // ----------------------
-  // Pagamento
-  // ----------------------
-  if (/pix/.test(texto)) {
-    await client.sendMessage(chatId, '🔑 Chave Pix: 📱 CNPJ: 49.093.600/0001-30\nNAYANDRA KELLY H SANTIAGO');
-    return;
-  }
-
-  if (/dinheiro/.test(texto)) {
-    await client.sendMessage(chatId, '💵 Pagamento em dinheiro registrado.');
-    return;
-  }
-
-  if (/cartão|cartao/.test(texto)) {
-    await client.sendMessage(chatId, '💳 Parcelamento disponível: 2x acima de R$100, 3x acima de R$150. Valor parcelado não tem desconto.');
-    return;
-  }
 });
