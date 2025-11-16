@@ -1,10 +1,9 @@
-
 {
   "name": "lider-festas-bot",
   "version": "1.0.0",
   "description": "Chatbot da loja Líder Festas rodando 24h no Railway",
   "main": "chatbot.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "start": "node chatbot.js"
   },
