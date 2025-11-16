@@ -1,43 +1,47 @@
-// supabase.js (ESM)
-import { createClient } from '@supabase/supabase-js';
-import fs from 'fs-extra';
+// ----------------------------
+// supabase.js
+// ----------------------------
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = 'https://lxvtuyvvnxggshtgzlny.supabase.co';
+// URL do seu projeto Supabase
+const supabaseUrl = "https://lxvtuyvvnxggshtgzlny.supabase.co";
+// Chave vindo da variável de ambiente no Railway
 const supabaseKey = process.env.SUPABASE_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Salvar sessão WhatsApp
-export async function salvarSessao() {
-  if (!fs.existsSync('.wwebjs_auth')) return;
-  const files = fs.readdirSync('.wwebjs_auth');
-  for (const file of files) {
-    const data = fs.readFileSync(`.wwebjs_auth/${file}`);
-    await supabase.storage.from('whatsapp-session').upload(file, data, { upsert: true });
-  }
-  console.log('Sessão salva no Supabase ✅');
-}
-
-// Carregar sessão WhatsApp
-export async function carregarSessao() {
-  const { data } = await supabase.storage.from('whatsapp-session').list();
-  if (!data) return;
-
-  if (!fs.existsSync('.wwebjs_auth')) fs.mkdirSync('.wwebjs_auth');
-  for (const file of data) {
-    const { data: fileData } = await supabase.storage.from('whatsapp-session').download(file.name);
-    const buffer = Buffer.from(await fileData.arrayBuffer());
-    fs.writeFileSync(`.wwebjs_auth/${file.name}`, buffer);
-  }
-  console.log('Sessão carregada do Supabase ✅');
-}
-
-// Funções para salvar/recuperar endereço
+// ----------------------------
+// Função para salvar ou atualizar endereço
+// ----------------------------
 export async function salvarEndereco(chatId, endereco) {
-  await supabase.from('enderecos').upsert({ chat_id: chatId, endereco });
+  try {
+    await supabase
+      .from("enderecos")
+      .upsert({ chat_id: chatId, endereco: endereco });
+    console.log(`Endereço salvo para ${chatId}: ${endereco}`);
+  } catch (err) {
+    console.error("Erro ao salvar endereço:", err);
+  }
 }
 
-export async function buscarEndereco(chatId) {
-  const { data } = await supabase.from('enderecos').select('endereco').eq('chat_id', chatId).single();
-  return data?.endereco || null;
+// ----------------------------
+// Função para carregar todos os endereços
+// ----------------------------
+export async function carregarEnderecos() {
+  const enderecos = {};
+  try {
+    const { data, error } = await supabase.from("enderecos").select("*");
+    if (error) {
+      console.error("Erro ao carregar endereços:", error);
+      return enderecos;
+    }
+    if (data) {
+      data.forEach((item) => {
+        enderecos[item.chat_id] = item.endereco;
+      });
+    }
+  } catch (err) {
+    console.error("Erro ao carregar endereços:", err);
+  }
+  return enderecos;
 }
