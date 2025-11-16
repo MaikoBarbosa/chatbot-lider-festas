@@ -1,7 +1,8 @@
 {
   "name": "lider-festas-bot",
   "version": "1.0.0",
-  "description": "Chatbot da loja Líder Festas rodando 24h no Render",
+  "description": "Chatbot da loja Líder Festas rodando 24h no Railway",
+  "type": "module",
   "main": "chatbot.js",
   "scripts": {
     "start": "node chatbot.js"
@@ -13,6 +14,7 @@
     "puppeteer": "^23.7.1",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main",
-    "@supabase/supabase-js": "^2.33.2"
+    "@supabase/supabase-js": "^2.33.2",
+    "fs-extra": "^11.1.1"
   }
 }
