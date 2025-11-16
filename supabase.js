@@ -1,15 +1,16 @@
-import { createClient } from '@supabase/supabase-js'
-import fs from 'fs-extra'
+// supabase.js (CommonJS)
+const { createClient } = require('@supabase/supabase-js')
+const fs = require('fs-extra')
 
 // URL do seu projeto Supabase
 const supabaseUrl = 'https://lxvtuyvvnxggshtgzlny.supabase.co'
 // Chave vindo da variável de ambiente no Railway
 const supabaseKey = process.env.SUPABASE_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 // Função para salvar sessão WhatsApp
-export async function salvarSessao() {
+async function salvarSessao() {
     if (!fs.existsSync('.wwebjs_auth')) return
 
     const files = fs.readdirSync('.wwebjs_auth')
@@ -22,7 +23,7 @@ export async function salvarSessao() {
 }
 
 // Função para carregar sessão WhatsApp
-export async function carregarSessao() {
+async function carregarSessao() {
     const { data } = await supabase.storage.from('whatsapp-session').list()
     if (!data) return
 
@@ -35,3 +36,5 @@ export async function carregarSessao() {
     }
     console.log('Sessão carregada do Supabase ✅')
 }
+
+module.exports = { supabase, salvarSessao, carregarSessao }
