@@ -8,6 +8,10 @@ const supabaseKey = process.env.SUPABASE_KEY
 
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+// ==========================
+// Sessão WhatsApp
+// ==========================
+
 // Função para salvar a sessão do WhatsApp no Supabase
 export async function salvarSessao() {
     if (!fs.existsSync('.wwebjs_auth')) return
@@ -34,4 +38,28 @@ export async function carregarSessao() {
         fs.writeFileSync(`.wwebjs_auth/${file.name}`, buffer)
     }
     console.log('Sessão carregada do Supabase ✅')
+}
+
+// ==========================
+// Endereços de entrega
+// ==========================
+
+// Salvar ou atualizar endereço do cliente
+export async function salvarEndereco(chatId, endereco) {
+    const { data, error } = await supabase
+        .from('enderecos')
+        .upsert({ id: chatId, endereco })
+    if (error) console.error('Erro ao salvar endereço:', error)
+    return data
+}
+
+// Buscar endereço de um cliente
+export async function buscarEndereco(chatId) {
+    const { data, error } = await supabase
+        .from('enderecos')
+        .select('endereco')
+        .eq('id', chatId)
+        .single()
+    if (error) return null
+    return data?.endereco || null
 }
