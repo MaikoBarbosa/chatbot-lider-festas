@@ -12,6 +12,7 @@
     "openai": "^4.78.1",
     "puppeteer": "^23.7.1",
     "qrcode-terminal": "^0.12.0",
-    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main"
+    "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main",
+    "@supabase/supabase-js": "^2.33.2"
   }
 }
