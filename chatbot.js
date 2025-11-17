@@ -25,7 +25,7 @@ client.on("qr", (qr) => {
   console.log("🟢 ESCANEIE ESTE QR CODE (em texto):");
   console.log(qr);
   console.log("===========================================");
-  qrcode.generate(qr, { small: true });
+ // qrcode.generate(qr, { small: true });
 });
 client.on("ready", () => console.log("✅ Bot conectado ao WhatsApp!"));
 client.initialize();
