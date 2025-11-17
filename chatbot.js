@@ -273,8 +273,7 @@ client.on("message", async (msg) => {
     ultimoClienteAtivo = chatId;
 
     // Mensagem vinda do VENDEDOR (humano que usa o mesmo WhatsApp)
-// Mensagem vinda do VENDEDOR (humano que usa o mesmo WhatsApp)
-if (msg.fromMe) {
+if (msg.from === VENDEDOR_CHAT) {
   try {
     let clienteRespondido = null;
 
