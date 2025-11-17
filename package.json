@@ -3,14 +3,12 @@
   "version": "1.0.0",
   "description": "Chatbot da loja Líder Festas rodando 24h no Railway",
   "main": "chatbot.js",
-  "type": "module",
   "scripts": {
     "start": "node chatbot.js"
   },
   "dependencies": {
     "express": "^4.21.0",
     "moment-timezone": "^0.5.45",
-    "openai": "^4.78.1",
     "puppeteer": "^23.7.1",
     "qrcode-terminal": "^0.12.0",
     "whatsapp-web.js": "github:pedroslopez/whatsapp-web.js#main",
