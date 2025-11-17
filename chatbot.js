@@ -316,7 +316,7 @@ client.on("message", async (msg) => {
     // ========== Fluxos do cliente ==========
     // Adicionar itens
     if (["mais", "bota", "adicionar", "adiciona", "coloca", "acrescenta"].some((t) => texto.includes(t))) {
-      await client.sendMessage(chatId, `Perfeito! 😊 Já anotei! Deseja adicionar mais algum item, ou podemos encerrar ?`);
+      await client.sendMessage(chatId, `Perfeito! 😊 Pode me enviar o que mais deseja adicionar o seu pedido.`);
       estadoCliente[chatId] = "aguardando_item";
       return;
     }
@@ -461,7 +461,7 @@ client.on("message", async (msg) => {
       if (texto.includes("parcelado")) {
         await client.sendMessage(
           chatId,
-          `💳 Parcelamos em *2x para compras acima de R$100* e *3x acima de R$150*.\n⚠️ *Obs:* Valor parcelado não tem desconto.\nVocê deseja realmente parcelar? (sim/não)`
+          `💳 Parcelamos em:\n\n▶️*2x para compras acima de R$100*\n\n▶️*3x acima de R$150*.\n\n⚠️ *Obs:* Valor parcelado não tem desconto.\n\nVocê deseja realmente parcelar? (sim/não)`
         );
         estadoCliente[chatId] = "confirmar_parcelamento";
       } else if (texto.includes("à vista") || texto.includes("avista") || texto.includes("a vista")) {
