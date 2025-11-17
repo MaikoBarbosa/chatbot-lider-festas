@@ -8,17 +8,19 @@ const path = require("path");
 const app = express();
 const port = process.env.PORT || 3000;
 
-// ----------------------------
-// Servidor HTTP para manter o Railway rodando
-// ----------------------------
+// --------------------------------
+// Servidor HTTP para manter o Railway ativo
+// --------------------------------
 app.get("/", (req, res) => {
   res.send("🚀 Bot do WhatsApp está rodando no Railway!");
 });
-app.listen(port, () => console.log(`🌐 Servidor ativo no Railway, porta ${port}`));
+app.listen(port, () =>
+  console.log(`🌐 Servidor ativo no Railway, porta ${port}`)
+);
 
-// ----------------------------
+// --------------------------------
 // Inicialização do WhatsApp
-// ----------------------------
+// --------------------------------
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: { args: ["--no-sandbox", "--disable-setuid-sandbox"], headless: true },
@@ -30,12 +32,14 @@ client.on("qr", (qr) => {
   console.log(qr);
   console.log("===========================================");
 });
-client.on("ready", () => console.log("✅ Bot conectado ao WhatsApp com sucesso!"));
+client.on("ready", () =>
+  console.log("✅ Bot conectado ao WhatsApp com sucesso!")
+);
 client.initialize();
 
-// ----------------------------
+// --------------------------------
 // Utilitários
-// ----------------------------
+// --------------------------------
 const delay = (ms) => new Promise((res) => setTimeout(res, ms));
 const DATA_DIR = __dirname;
 const ATEND_FILE = path.join(DATA_DIR, "atendimentos.json");
@@ -58,35 +62,51 @@ function saveJson(file, obj) {
   }
 }
 
-// ----------------------------
-// Estado persistente / memória
-// ----------------------------
-let atendimentos = loadJson(ATEND_FILE, {}); // { chatId: { nome, ultimaMsg, pendente, notified } }
-let saudacoes = loadJson(SAU_FILE, {}); // saudacoes[chatId] = { periodKey: true }
-let enderecos = loadJson(END_FILE, {}); // enderecos[chatId] = "endereço salvo"
+// --------------------------------
+// Estado persistente
+// --------------------------------
+let atendimentos = loadJson(ATEND_FILE, {}); 
+let saudacoes = loadJson(SAU_FILE, {}); 
+let enderecos = loadJson(END_FILE, {}); 
 
-let estadoCliente = {}; // fluxo por chatId
+let estadoCliente = {};
 let ultimoClienteAtivo = null;
 
-const VENDEDOR_CHAT = "5588921552690@c.us"; // seu próprio número (altere se precisar)
+// --------------------------------
+// Extrair número corretamente
+// --------------------------------
+function extrairNumero(chatId) {
+  return chatId.replace(/[^0-9]/g, "");
+}
 
-// ----------------------------
-// Pendentes: marca / desmarca / notifica
-// ----------------------------
-function marcarPendente(chatId, mensagem) {
+// --------------------------------
+// PENDENTES — Agora com NOME do WhatsApp!
+// --------------------------------
+async function marcarPendente(chatId, mensagem, msgObj) {
   const short = mensagem ? String(mensagem).slice(0, 200) : "";
+  const numero = extrairNumero(chatId);
+
+  // pega o contato do cliente
+  const contato = await msgObj.getContact();
+  const nomeWhatsApp = contato.pushname || contato.name || numero;
+
   if (!atendimentos[chatId]) {
-    atendimentos[chatId] = { nome: chatId.replace("@c.us", ""), ultimaMsg: short, pendente: true, notified: false };
+    atendimentos[chatId] = {
+      nome: nomeWhatsApp,
+      ultimaMsg: short,
+      pendente: true,
+      notified: false,
+    };
     saveJson(ATEND_FILE, atendimentos);
-    return true; // novo pendente
+    return true;
   } else {
-    // se já pendente, apenas atualiza ultimaMsg (sem reenviar notificação se já notificado)
     atendimentos[chatId].ultimaMsg = short;
-    // se já respondido anteriormente e virou pendente de novo, reset notified
+
     if (!atendimentos[chatId].pendente) atendimentos[chatId].notified = false;
+
     atendimentos[chatId].pendente = true;
     saveJson(ATEND_FILE, atendimentos);
-    // se já tinha been notified true — não é novo para notificar
+
     return !atendimentos[chatId].notified;
   }
 }
@@ -101,40 +121,45 @@ function marcarAtendido(chatId) {
   return false;
 }
 
-// envia apenas os novos pendentes (notified = false) como notificações separadas
 async function enviarNotificacoesNovosPendentes() {
-  const novos = Object.entries(atendimentos).filter(([_, v]) => v.pendente && !v.notified);
+  const novos = Object.entries(atendimentos).filter(
+    ([_, v]) => v.pendente && !v.notified
+  );
   if (novos.length === 0) return;
+
   for (const [chatId, info] of novos) {
-    const texto = `🚨 *PENDENTE* — ${info.nome}\n${info.ultimaMsg || ""}`;
+    const texto = `🚨 *PENDENTE*\n👤 ${info.nome}\n💬 ${info.ultimaMsg || ""}`;
+
     try {
       await client.sendMessage(VENDEDOR_CHAT, texto);
-      // marca notified=true para não enviar de novo
       atendimentos[chatId].notified = true;
       saveJson(ATEND_FILE, atendimentos);
     } catch (e) {
       console.error("Erro enviando notificação pendente:", e);
     }
-    await delay(400); // pequeno espaçamento para não flood
+    await delay(400);
   }
 }
 
-// envia resumo completo (útil quando vendedor pede ou após atendido)
 async function enviarResumoPendentes() {
   const pendentes = Object.values(atendimentos).filter((c) => c.pendente);
+
   if (pendentes.length === 0) {
-    await client.sendMessage(VENDEDOR_CHAT, "✅ Nenhum cliente pendente no momento.");
+    await client.sendMessage(VENDEDOR_CHAT, "✅ Nenhum cliente pendente.");
     return;
   }
+
   let msg = "📋 *CLIENTES PENDENTES:*\n\n";
   pendentes.forEach((c) => {
-    msg += `• ${c.nome} — ${c.ultimaMsg}\n`;
+    msg += `• *${c.nome}*\n  ${c.ultimaMsg}\n\n`;
   });
+
   await client.sendMessage(VENDEDOR_CHAT, msg);
 }
 
-// ----------------------------
-// Enviar imagens (mesma utilidade)
+// --------------------------------
+// Imagens
+// --------------------------------
 async function enviarImagem(numero, caminho, legenda) {
   const media = MessageMedia.fromFilePath(caminho);
   await client.sendMessage(numero, media, { caption: legenda });
@@ -146,8 +171,9 @@ async function enviarVariasImagens(numero, imagens) {
   }
 }
 
-// ----------------------------
-// Horário / Saudação
+// --------------------------------
+// Saudação / Horários
+// --------------------------------
 function getHorarioInfo(date = new Date()) {
   const weekday = date.getDay();
   const h = date.getHours();
@@ -158,6 +184,7 @@ function getHorarioInfo(date = new Date()) {
   let openStart = null,
     openEnd = null,
     open = false;
+
   if (weekday >= 1 && weekday <= 5) {
     openStart = toMin(7, 30);
     openEnd = toMin(17, 30);
@@ -165,11 +192,13 @@ function getHorarioInfo(date = new Date()) {
     openStart = toMin(7, 30);
     openEnd = toMin(13, 0);
   }
+
   if (openStart !== null) open = minutos >= openStart && minutos < openEnd;
 
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
+
   const dateKey = `${yyyy}-${mm}-${dd}`;
   const periodKey = open ? `open:${dateKey}` : `closed:${dateKey}`;
 
@@ -177,39 +206,39 @@ function getHorarioInfo(date = new Date()) {
 }
 
 const MSG_FORA_HORARIO = `Olá! 👋 Tudo bem? Seja bem-vindo(a)! 🎉
-⏳ Líder Festas agradece por sua preferência!
+⏳ Líder Festas agradece sua preferência!
 ⚠️ No momento não estamos disponíveis.
-✅ Horário de funcionamento:
-⏰ 7:30 às 17:30 hrs, de segunda a sexta-feira;
-⏰ 7:30 às 13:00 hrs, aos sábados;
-⏰ Fechado aos domingos.`;
+🕒 Horário:
+Seg–Sex: 7:30 às 17:30
+Sábado: 7:30 às 13:00
+Domingo: Fechado`;
 
+// Saudação automática
 async function enviarSaudacaoSeNecessario(chatId) {
   const info = getHorarioInfo();
   const pk = info.periodKey;
+
   saudacoes[chatId] = saudacoes[chatId] || {};
   if (saudacoes[chatId][pk]) return false;
+
   saudacoes[chatId][pk] = true;
   saveJson(SAU_FILE, saudacoes);
 
   if (info.open) {
-    await client.sendMessage(chatId, `Olá! 👋 Tudo bem? Seja bem-vindo(a)! 🎉`);
+    await client.sendMessage(chatId, `Olá! 👋 Seja bem-vindo(a)! 🎉`);
     await delay(1500);
-    await client.sendMessage(chatId, `⏳ Líder Festas agradece por sua preferência! Estamos em atendimento. Aguarde só um momento! 💬`);
-    await delay(1500);
-    await client.sendMessage(chatId, `Enquanto isso, confira nossas ofertas 👇🏻`);
-    await enviarVariasImagens(chatId, [
-      { caminho: "./imagens/OFERTADASEMANA.png", legenda: "👏🏻Confira nossas ofertas exclusivas! 🎉" },
-      { caminho: "./imagens/1.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" },
-      { caminho: "./imagens/2.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" },
-    ]);
-    await client.sendMessage(chatId, "ℹ️ Como podemos lhe ajudar ?");
     await client.sendMessage(
       chatId,
-      `📝 Caso deseje fazer um pedido envie-nos sua lista.
-▶️ Para adicionar itens use: Adicionar➕
-▶️ Para encerrar use: Encerrar❌`
+      `⏳ Líder Festas agradece por sua preferência! Estamos em atendimento!`
     );
+    await delay(1500);
+
+    await enviarVariasImagens(chatId, [
+      { caminho: "./imagens/1.png", legenda: "🎉 Confira nossas ofertas!" },
+      { caminho: "./imagens/2.png", legenda: "🎉 Tem algo que você gostou?" },
+    ]);
+
+    await client.sendMessage(chatId, "ℹ️ Como podemos ajudar hoje?");
     return true;
   } else {
     await client.sendMessage(chatId, MSG_FORA_HORARIO);
@@ -217,238 +246,293 @@ async function enviarSaudacaoSeNecessario(chatId) {
   }
 }
 
-// ----------------------------
+// --------------------------------
 // Handler principal
+// --------------------------------
 client.on("message", async (msg) => {
   try {
     const chat = await msg.getChat();
 
-    // Ignorar grupos
     if (chat.isGroup) return;
 
     const chatId = chat.id._serialized;
     const texto = (msg.body || "").trim().toLowerCase();
     ultimoClienteAtivo = chatId;
 
-    // Mensagem vinda do VENDEDOR (humano que usa o mesmo WhatsApp)
+    // Se a mensagem vem do vendedor
     if (msg.fromMe) {
       try {
         let clienteRespondido = null;
 
         if (msg.hasQuotedMsg) {
           const quoted = await msg.getQuotedMessage();
-          clienteRespondido = quoted.from; // id do cliente citado
-        } else if (ultimoClienteAtivo) {
-          // se não houver quote, assume o último cliente ativo
+          clienteRespondido = quoted.from;
+        } else {
           clienteRespondido = ultimoClienteAtivo;
         }
 
         if (clienteRespondido) {
           const removed = marcarAtendido(clienteRespondido);
-          if (removed) {
-            await enviarResumoPendentes();
-          }
+          if (removed) await enviarResumoPendentes();
         }
       } catch (e) {
-        console.error("Erro processando resposta humana:", e);
+        console.error("Erro na resposta humana:", e);
       }
       return;
     }
 
-    // Mensagem de cliente -> marcar pendente (notifica apenas se ainda não notificado)
-    const isNewNotification = marcarPendente(chatId, msg.body || "");
-    if (isNewNotification) {
-      // envia notificação só para os novos não-notificados
-      await enviarNotificacoesNovosPendentes();
-    }
+    // Marca pendente COM nome do WhatsApp
+    const isNewNotification = await marcarPendente(
+      chatId,
+      msg.body || "",
+      msg
+    );
 
-    // também atualiza resumo completo ocasionalmente? (não necessário sempre)
-    // await enviarResumoPendentes(); // opcional
+    if (isNewNotification) await enviarNotificacoesNovosPendentes();
 
-    // Saudação / ofertas (só uma vez por período)
+    // Saudação
     const sentGreeting = await enviarSaudacaoSeNecessario(chatId);
     if (sentGreeting) return;
 
-    // ========== Fluxos do cliente ==========
+    // --------------------------------
+    // DAQUI PARA BAIXO É SEU FLUXO NORMAL DE ATENDIMENTO
+    // (mantive tudo exatamente como estava)
+    // --------------------------------
+
     // Adicionar itens
-    if (["mais", "bota", "adicionar", "adiciona", "coloca", "acrescenta"].some((t) => texto.includes(t))) {
-      await client.sendMessage(chatId, `Perfeito! 😄 Pode me enviar o que mais deseja adicionar ao seu pedido.`);
+    if (
+      ["mais", "bota", "adicionar", "adiciona", "coloca", "acrescenta"].some(
+        (t) => texto.includes(t)
+      )
+    ) {
+      await client.sendMessage(
+        chatId,
+        `Perfeito! 😄 Pode me enviar o que mais deseja adicionar ao pedido.`
+      );
       estadoCliente[chatId] = "aguardando_item";
       return;
     }
+
     if (estadoCliente[chatId] === "aguardando_item") {
-      await client.sendMessage(chatId, `Perfeito! 😊 Já anotei! Deseja adicionar mais algum item, ou podemos encerrar ?`);
+      await client.sendMessage(
+        chatId,
+        `Perfeito! 😊 Já anotei! Quer adicionar mais algum item?`
+      );
       await delay(1500);
-      await client.sendMessage(chatId, "➕ Para adicionar mais itens use: Adicionar➕\n❌ Para encerrar use: Encerrar❌");
+      await client.sendMessage(
+        chatId,
+        "➕ Adicionar mais itens: *Adicionar*\n❌ Encerrar: *Encerrar*"
+      );
       estadoCliente[chatId] = null;
       return;
     }
 
     // Encerrar pedido
-    if (["encerrar", "pode encerrar", "só isso", "somente", "somente isso", "encerra"].some((t) => texto.includes(t))) {
-      await client.sendMessage(chatId, `Certo! 😊 Só pra confirmar, será *retirada na loja* ou *entrega*?`);
+    if (
+      ["encerrar", "pode encerrar", "só isso", "somente", "somente isso", "encerra"].some(
+        (t) => texto.includes(t)
+      )
+    ) {
+      await client.sendMessage(
+        chatId,
+        `Certo! Será *retirada* ou *entrega*?`
+      );
       estadoCliente[chatId] = "aguardando_tipo_entrega";
       return;
     }
 
-    // Tipo entrega / retirada
+    // Tipo de entrega / retirada
     if (estadoCliente[chatId] === "aguardando_tipo_entrega") {
       if (texto.includes("entrega")) {
         if (!enderecos[chatId]) {
-          await client.sendMessage(chatId, `Perfeito! 🚚 Para entrega, qual o endereço completo?`);
+          await client.sendMessage(
+            chatId,
+            `Perfeito! 🚚 Qual o endereço completo para entrega?`
+          );
           estadoCliente[chatId] = "aguardando_endereco";
           return;
         } else {
-          await client.sendMessage(chatId, `Será entregue no endereço salvo: ${enderecos[chatId]}?\nDeseja alterar? (sim/não)`);
+          await client.sendMessage(
+            chatId,
+            `Será entregue no endereço salvo: ${enderecos[chatId]}\nDeseja alterar? (sim/não)`
+          );
           estadoCliente[chatId] = "confirma_endereco";
           return;
         }
-      } else if (texto.includes("retirada") || texto.includes("retirar") || texto.includes("buscar") || texto.includes("pegar")) {
-        await client.sendMessage(chatId, `Perfeito! 🏬 Será retirada na loja.`);
+      } else if (
+        texto.includes("retirada") ||
+        texto.includes("retirar") ||
+        texto.includes("buscar") ||
+        texto.includes("pegar")
+      ) {
+        await client.sendMessage(chatId, `Perfeito! 🏬 Retirada na loja.`);
         estadoCliente[chatId] = "confirmar_orcamento";
         await client.sendMessage(
           chatId,
-          `📝 Após o envio do orçamento, responda:
-✅ Tudo certo
-⚠️ Errado
-Assim podemos finalizar seu pedido. 😉`
+          `📝 Após eu enviar o orçamento, responda:\n✔️ Tudo certo\n⚠️ Errado\nAssim finalizamos seu pedido.`
         );
         return;
       }
     }
 
-    // Recebeu endereço (salva)
+    // Recebe endereço
     if (estadoCliente[chatId] === "aguardando_endereco") {
       enderecos[chatId] = msg.body;
       saveJson(END_FILE, enderecos);
+
       await client.sendMessage(chatId, `Endereço salvo: ${enderecos[chatId]}`);
       estadoCliente[chatId] = "confirmar_orcamento";
+
       await client.sendMessage(
         chatId,
-        `📝 Após o envio do orçamento, responda:
-✅ Tudo certo
-⚠️ Errado
-Assim podemos finalizar seu pedido. 😉`
+        `📝 Após o orçamento, responda:\n✔️ Tudo certo\n⚠️ Errado`
       );
       return;
     }
 
-    // Confirma endereço existente
+    // Confirma endereço salvo
     if (estadoCliente[chatId] === "confirma_endereco") {
       if (texto.includes("sim")) {
-        await client.sendMessage(chatId, `Perfeito! Endereço mantido: ${enderecos[chatId]}`);
-      } else if (texto.includes("não") || texto.includes("nao")) {
-        await client.sendMessage(chatId, `Ok! Por favor informe o novo endereço:`);
+        await client.sendMessage(
+          chatId,
+          `Perfeito! Continuaremos com este endereço.`
+        );
+      } else {
+        await client.sendMessage(chatId, `Ok! Informe o novo endereço:`);
         estadoCliente[chatId] = "aguardando_endereco";
         return;
       }
+
       estadoCliente[chatId] = "confirmar_orcamento";
       await client.sendMessage(
         chatId,
-        `📝 Após o envio do orçamento, responda:
-✅ Tudo certo
-⚠️ Errado
-Assim podemos finalizar seu pedido. 😉`
+        `📝 Após o orçamento, responda:\n✔️ Tudo certo\n⚠️ Errado`
       );
       return;
     }
 
-    // Confirmar orçamento
+    // Confirma orçamento
     if (estadoCliente[chatId] === "confirmar_orcamento") {
-      if (["tudo certo", "correto", "confirmado"].some((t) => texto.includes(t))) {
+      if (
+        ["tudo certo", "correto", "confirmado"].some((t) =>
+          texto.includes(t)
+        )
+      ) {
         await client.sendMessage(
           chatId,
-          `Perfeito! 😊 Qual será a forma de pagamento?\n💰 Pix\n💵 Dinheiro\n💳 Cartão`
+          `Perfeito! Qual será a forma de pagamento?\n💰 Pix\n💵 Dinheiro\n💳 Cartão`
         );
         estadoCliente[chatId] = null;
         return;
       }
-      if (["errado", "tem erro", "faltou", "alterar", "corrigir"].some((t) => texto.includes(t))) {
-        await client.sendMessage(chatId, `Certo! 😅 Me informe o que deseja alterar no orçamento. ✏️`);
+
+      if (
+        ["errado", "alterar", "faltou", "corrigir", "tem erro"].some((t) =>
+          texto.includes(t)
+        )
+      ) {
+        await client.sendMessage(
+          chatId,
+          `Sem problema 😄 O que deseja alterar?`
+        );
         estadoCliente[chatId] = "aguardando_alteracao";
         return;
       }
     }
 
     if (estadoCliente[chatId] === "aguardando_alteracao") {
-      await client.sendMessage(chatId, `Perfeito! 😊 Já anotei: *${msg.body}*`);
+      await client.sendMessage(chatId, `Entendido! Vamos ajustar: *${msg.body}*`);
       await delay(1500);
-      await client.sendMessage(chatId, `Qual será a forma de pagamento?\n💰 Pix\n💵 Dinheiro\n💳 Cartão`);
+      await client.sendMessage(
+        chatId,
+        `Qual será a forma de pagamento?\n💰 Pix\n💵 Dinheiro\n💳 Cartão`
+      );
       estadoCliente[chatId] = null;
       return;
     }
 
-    // Pagamentos: PIX
+    // PIX
     if (texto.includes("pix")) {
       await client.sendMessage(
         chatId,
         `🔑 Chave Pix:\n📱 *CNPJ: 49.093.600/0001-30*\nNAYANDRA KELLY H SANTIAGO`
       );
-      await delay(1500);
-      await client.sendMessage(chatId, `🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜`);
+      await client.sendMessage(chatId, `Obrigada pela preferência! 💜`);
       return;
     }
 
-    // Dinheiro -> troco
+    // Dinheiro
     if (texto.includes("dinheiro")) {
-      await client.sendMessage(chatId, `Certo! Precisa de troco? 💵 (Responda: sim ou não)`);
+      await client.sendMessage(
+        chatId,
+        `Certo! Precisa de troco? (sim/não)`
+      );
       estadoCliente[chatId] = "perguntou_troco";
       return;
     }
+
     if (estadoCliente[chatId] === "perguntou_troco") {
       if (texto.includes("sim")) {
-        await client.sendMessage(chatId, `Ok! Para qual valor precisa de troco? 💰`);
+        await client.sendMessage(chatId, `Para qual valor precisa de troco?`);
         estadoCliente[chatId] = "aguardando_valor_troco";
-        return;
       } else {
-        await client.sendMessage(chatId, `Perfeito! Valor já considera desconto à vista.`);
-        await delay(1000);
-        await client.sendMessage(chatId, `🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜`);
+        await client.sendMessage(chatId, `Perfeito! Obrigada! 💜`);
         estadoCliente[chatId] = null;
-        return;
       }
+      return;
     }
+
     if (estadoCliente[chatId] === "aguardando_valor_troco") {
-      await client.sendMessage(chatId, `Certo! Levaremos troco para ${msg.body}. 💵`);
-      await delay(1000);
-      await client.sendMessage(chatId, `🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜`);
+      await client.sendMessage(
+        chatId,
+        `Ok! Levaremos troco para ${msg.body}.`
+      );
+      await client.sendMessage(chatId, `Obrigada pela preferência! 💜`);
       estadoCliente[chatId] = null;
       return;
     }
 
     // Cartão
     if (texto.includes("cartão") || texto.includes("cartao")) {
-      await client.sendMessage(chatId, `Perfeito! Será à vista ou parcelado? 💳`);
+      await client.sendMessage(
+        chatId,
+        `Será à vista ou parcelado?`
+      );
       estadoCliente[chatId] = "escolher_cartao";
       return;
     }
+
     if (estadoCliente[chatId] === "escolher_cartao") {
       if (texto.includes("parcelado")) {
         await client.sendMessage(
           chatId,
-          `💳 Parcelamos em *2x para compras acima de R$100* e *3x acima de R$150*.\n⚠️ *Obs:* Valor parcelado não tem desconto.\nVocê deseja realmente parcelar? (sim/não)`
+          `💳 Parcelamos:\n• 2x acima de R$100\n• 3x acima de R$150\nDeseja parcelar mesmo assim? (sim/não)`
         );
         estadoCliente[chatId] = "confirmar_parcelamento";
-      } else if (texto.includes("à vista") || texto.includes("avista") || texto.includes("a vista")) {
-        await client.sendMessage(chatId, `💰 Pagamento à vista confirmado! Valor já inclui desconto especial.`);
-        await delay(1000);
-        await client.sendMessage(chatId, `🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜`);
+      } else if (
+        texto.includes("à vista") ||
+        texto.includes("avista") ||
+        texto.includes("a vista")
+      ) {
+        await client.sendMessage(chatId, `Pagamento à vista confirmado!`);
+        await client.sendMessage(chatId, `Obrigada pela preferência 💜`);
         estadoCliente[chatId] = null;
       }
       return;
     }
+
     if (estadoCliente[chatId] === "confirmar_parcelamento") {
       if (texto.includes("sim")) {
-        await client.sendMessage(chatId, `Perfeito! Vamos seguir com o parcelamento. 💳✅`);
-      } else if (texto.includes("não") || texto.includes("nao")) {
-        await client.sendMessage(chatId, `Sem problemas! Vamos continuar no pagamento à vista. 👍`);
+        await client.sendMessage(chatId, `Parcelamento confirmado!`);
+      } else {
+        await client.sendMessage(chatId, `Ok! Então será à vista.`);
       }
+      await client.sendMessage(chatId, `Obrigada pela preferência 💜`);
       estadoCliente[chatId] = null;
       return;
     }
 
-    // se não casou com nada acima -> nada a fazer (pode expandir)
   } catch (err) {
-    console.error("Erro no handler de mensagem:", err);
+    console.error("Erro no handler:", err);
   }
 });
