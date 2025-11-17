@@ -231,6 +231,8 @@ async function enviarSaudacaoSeNecessario(chatId) {
       chatId,
       `⏳ Líder Festas agradece por sua preferência! Estamos em atendimento!`
     );
+    await client.sendMessage(chatId, `Encanto aguarda, confira nossas ofertas: 👇`);
+    await delay(1500);
     await delay(1500);
 
     await enviarVariasImagens(chatId, [
@@ -239,6 +241,8 @@ async function enviarSaudacaoSeNecessario(chatId) {
     ]);
 
     await client.sendMessage(chatId, "ℹ️ Como podemos ajudar hoje?");
+    await client.sendMessage( chatId, "📝 Caso deseje fazer um pedido envie-nos sua lista.\n\n▶️ Para adicionar itens use: Adicionar➕\n ▶️ Para encerrar use: Encerrar❌" );
+    }
     return true;
   } else {
     await client.sendMessage(chatId, MSG_FORA_HORARIO);
@@ -307,7 +311,7 @@ client.on("message", async (msg) => {
     ) {
       await client.sendMessage(
         chatId,
-        `Perfeito! 😄 Pode me enviar o que mais deseja adicionar ao pedido.`
+        `Perfeito! 😊 Já anotei! Deseja adicionar mais algum item, ou podemos encerrar ?`
       );
       estadoCliente[chatId] = "aguardando_item";
       return;
@@ -316,7 +320,7 @@ client.on("message", async (msg) => {
     if (estadoCliente[chatId] === "aguardando_item") {
       await client.sendMessage(
         chatId,
-        `Perfeito! 😊 Já anotei! Quer adicionar mais algum item?`
+        `Perfeito! 😊 Já anotei! Deseja adicionar mais algum item, ou podemos encerrar ?`
       );
       await delay(1500);
       await client.sendMessage(
@@ -457,7 +461,7 @@ client.on("message", async (msg) => {
         chatId,
         `🔑 Chave Pix:\n📱 *CNPJ: 49.093.600/0001-30*\nNAYANDRA KELLY H SANTIAGO`
       );
-      await client.sendMessage(chatId, `Obrigada pela preferência! 💜`);
+      await client.sendMessage(chatId, `🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜`);
       return;
     }
 
@@ -476,7 +480,7 @@ client.on("message", async (msg) => {
         await client.sendMessage(chatId, `Para qual valor precisa de troco?`);
         estadoCliente[chatId] = "aguardando_valor_troco";
       } else {
-        await client.sendMessage(chatId, `Perfeito! Obrigada! 💜`);
+        await client.sendMessage(chatId, `🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜`);
         estadoCliente[chatId] = null;
       }
       return;
@@ -487,7 +491,7 @@ client.on("message", async (msg) => {
         chatId,
         `Ok! Levaremos troco para ${msg.body}.`
       );
-      await client.sendMessage(chatId, `Obrigada pela preferência! 💜`);
+      await client.sendMessage(chatId, `🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜`);
       estadoCliente[chatId] = null;
       return;
     }
@@ -506,7 +510,7 @@ client.on("message", async (msg) => {
       if (texto.includes("parcelado")) {
         await client.sendMessage(
           chatId,
-          `💳 Parcelamos:\n• 2x acima de R$100\n• 3x acima de R$150\nDeseja parcelar mesmo assim? (sim/não)`
+          `💳 Parcelamos em *2x para compras acima de R$100* e *3x acima de R$150*.\n⚠️ *Obs:* Valor parcelado não tem desconto.\nVocê deseja realmente parcelar? (sim/não)`
         );
         estadoCliente[chatId] = "confirmar_parcelamento";
       } else if (
@@ -515,7 +519,7 @@ client.on("message", async (msg) => {
         texto.includes("a vista")
       ) {
         await client.sendMessage(chatId, `Pagamento à vista confirmado!`);
-        await client.sendMessage(chatId, `Obrigada pela preferência 💜`);
+        await client.sendMessage(chatId, `🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜`);
         estadoCliente[chatId] = null;
       }
       return;
@@ -527,7 +531,7 @@ client.on("message", async (msg) => {
       } else {
         await client.sendMessage(chatId, `Ok! Então será à vista.`);
       }
-      await client.sendMessage(chatId, `Obrigada pela preferência 💜`);
+      await client.sendMessage(chatId, `🙏🎉 Agradecemos pela preferência! Tenha um ótimo dia! 💜`);
       estadoCliente[chatId] = null;
       return;
     }
