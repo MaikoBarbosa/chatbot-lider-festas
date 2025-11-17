@@ -392,7 +392,7 @@ if (msg.fromMe) {
 
     // Confirmar orçamento
     if (estadoCliente[chatId] === "confirmar_orcamento") {
-      if (["tudo certo", "correto", "confirmado", "certo", "OK"].some((t) => texto.includes(t))) {
+      if (["tudo certo", "correto", "confirmado", "certo", "ok"].some((t) => texto.includes(t))) {
         await client.sendMessage(
           chatId,
           `Perfeito! 😊 Qual será a forma de pagamento?\n💰 Pix\n💵 Dinheiro\n💳 Cartão`
