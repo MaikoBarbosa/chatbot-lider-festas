@@ -6,7 +6,7 @@ const fs = require("fs");
 const path = require("path");
 
 // 👉 NUMERO FIXO DO VENDEDOR
-const VENDEDOR_CHAT = "5588921552690@c.us";
+const VENDEDOR_CHAT = "558897019483@c.us";
 
 const app = express();
 const port = process.env.PORT || 3000;
