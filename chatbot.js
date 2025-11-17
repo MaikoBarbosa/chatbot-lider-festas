@@ -378,11 +378,11 @@ client.on("message", async (msg) => {
       if (texto.includes("sim")) {
         await client.sendMessage(chatId, `Perfeito! Endereço mantido: ${enderecos[chatId]}`);
       } else if (texto.includes("não") || texto.includes("nao")) {
-        await client.sendMessage(chatId, `Ok! Por favor informe o novo endereço:`);
-        estadoCliente[chatId] = "aguardando_endereco";
+        await client.sendMessage(chatId, `Ok! Endereço mantido.`);
+        estadoCliente[chatId] = "confirmar_orcamento";
         return;
       }
-      estadoCliente[chatId] = "confirmar_orcamento";
+        estadoCliente[chatId] = "confirmar_orcamento";
       await client.sendMessage(
         chatId,
         `📝 Após o envio do orçamento, responda:\n✅ Tudo certo\n⚠️ Errado\nAssim podemos finalizar seu pedido. 😉`
