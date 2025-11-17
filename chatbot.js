@@ -246,8 +246,9 @@ async function enviarSaudacaoSeNecessario(chatId) {
 
     // tente enviar imagens (verifique se existem)
     await enviarVariasImagens(chatId, [
+      { caminho: "./imagens/Encarte.png", legenda: "👏🏻Confira nossas ofertas! 🎉" },
       { caminho: "./imagens/1.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" },
-      { caminho: "./imagens/2.png", legenda: "👏🏻Dá uma olhadinha nas novidades!" },
+      { caminho: "./imagens/2.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" },
     ]);
 
     await delay(800);
