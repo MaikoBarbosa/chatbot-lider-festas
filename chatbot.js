@@ -252,7 +252,7 @@ async function enviarSaudacaoSeNecessario(chatId) {
     await client.sendMessage(chatId, "ℹ️ Como podemos ajudar hoje?");
     await client.sendMessage(
       chatId,
-      "📝 Caso deseje fazer um pedido envie-nos sua lista.\n\n▶️ Para adicionar itens use: Adicionar➕\n ▶️ Para encerrar use: Encerrar❌"
+      "📝 Caso deseje fazer um pedido envie-nos sua lista.\n\n▶️ Para adicionar itens use: Adicionar➕\n▶️ Para encerrar use: Encerrar❌"
     );
   } else {
     await client.sendMessage(chatId, MSG_FORA_HORARIO);
@@ -325,7 +325,7 @@ client.on("message", async (msg) => {
     if (estadoCliente[chatId] === "aguardando_item") {
       await client.sendMessage(chatId, `Perfeito! 😊 Já anotei! Deseja adicionar mais algum item, ou podemos encerrar ?`);
       await delay(1500);
-      await client.sendMessage(chatId, "➕ Para adicionar mais itens use: Adicionar➕\n❌ Para encerrar use: Encerrar❌");
+      await client.sendMessage(chatId, "▶️ Para adicionar mais itens use: Adicionar➕\n▶️ Para encerrar use: Encerrar❌");
       estadoCliente[chatId] = null;
       return;
     }
@@ -354,7 +354,7 @@ client.on("message", async (msg) => {
         estadoCliente[chatId] = "confirmar_orcamento";
         await client.sendMessage(
           chatId,
-          `📝 Após o envio do orçamento, responda:\n          ✅ Tudo certo\n          ⚠️ Errado\n          Assim podemos finalizar seu pedido. 😉`
+          `📝 Após o envio do orçamento, responda:\n✅ Tudo certo\n⚠️ Errado\nAssim podemos finalizar seu pedido. 😉`
         );
         return;
       }
@@ -368,7 +368,7 @@ client.on("message", async (msg) => {
       estadoCliente[chatId] = "confirmar_orcamento";
       await client.sendMessage(
         chatId,
-        `📝 Após o envio do orçamento, responda:\n        ✅ Tudo certo\n        ⚠️ Errado\n        Assim podemos finalizar seu pedido. 😉`
+        `📝 Após o envio do orçamento, responda:\n✅ Tudo certo\n⚠️ Errado\nAssim podemos finalizar seu pedido. 😉`
       );
       return;
     }
