@@ -4,9 +4,8 @@
 import express from "express";
 import qrcode from "qrcode-terminal";
 import pkg from "whatsapp-web.js";
-import { supabase, salvarEndereco, carregarEnderecos } from "./supabase.js";
 
-const { Client, MessageMedia } = pkg;
+const { Client, LocalAuth, MessageMedia } = pkg;
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -44,22 +43,18 @@ async function enviarVariasImagens(numero, imagens) {
 // ----------------------------
 let estadoCliente = {};
 let saudacoes = {};
-let enderecos = {}; // Endereços carregados do Supabase
-
-// Carregar endereços salvos ao iniciar
-(async () => {
-  enderecos = await carregarEnderecos();
-  console.log("📌 Endereços carregados do Supabase:", enderecos);
-})();
 
 // ----------------------------
 // Inicialização do WhatsApp
 // ----------------------------
-const client = new Client({ puppeteer: { headless: true, args: ["--no-sandbox", "--disable-setuid-sandbox"] } });
+const client = new Client({
+  authStrategy: new LocalAuth(),
+  puppeteer: { args: ["--no-sandbox", "--disable-setuid-sandbox"], headless: true },
+});
 
 client.on("qr", (qr) => {
   console.log("===========================================");
-  console.log("🟢 ESCANEIE ESTE QR CODE:");
+  console.log("🟢 ESCANEIE ESTE QR CODE (em texto):");
   console.log(qr);
   console.log("===========================================");
 });
@@ -79,12 +74,11 @@ client.on("message", async (msg) => {
     const chatId = chat.id._serialized;
     const texto = (msg.body || "").trim().toLowerCase();
 
-    const agora = Date.now();
-    const tresHoras = 3 * 60 * 60 * 1000;
-
     // ----------------------------
     // Saudações
     // ----------------------------
+    const agora = Date.now();
+    const tresHoras = 3 * 60 * 60 * 1000;
     if (
       (texto.includes("oi") ||
         texto.includes("ola") ||
@@ -153,14 +147,8 @@ client.on("message", async (msg) => {
       texto.includes("só isso") ||
       texto.includes("somente")
     ) {
-      // Pergunta entrega ou retirada
-      if (enderecos[chatId]) {
-        await client.sendMessage(chatId, `Endereço salvo: ${enderecos[chatId]}. Deseja alterar ou manter?`);
-        estadoCliente[chatId] = "confirmar_endereco";
-      } else {
-        await client.sendMessage(chatId, "Certo! 😊 Será *entrega* ou *retirada na loja*?");
-        estadoCliente[chatId] = "aguardando_tipo_entrega";
-      }
+      await client.sendMessage(chatId, "Certo! 😊 Será *entrega* ou *retirada na loja*?");
+      estadoCliente[chatId] = "aguardando_tipo_entrega";
       return;
     }
 
@@ -177,24 +165,16 @@ client.on("message", async (msg) => {
         texto.includes("buscar") ||
         texto.includes("pegar")
       ) {
-        estadoCliente[chatId] = "retirada_confirmada";
+        estadoCliente[chatId] = null;
         await client.sendMessage(chatId, "Perfeito! 🏬 Retirada na loja confirmada.");
       }
       return;
     }
 
-    if (estadoCliente[chatId] === "aguardando_endereco" || estadoCliente[chatId] === "confirmar_endereco") {
-      if (texto.includes("alterar")) {
-        estadoCliente[chatId] = "aguardando_endereco";
-        await client.sendMessage(chatId, "Ok! Por favor, informe o novo endereço:");
-      } else {
-        const enderecoSalvo = msg.body.trim();
-        enderecos[chatId] = enderecoSalvo;
-        await salvarEndereco(chatId, enderecoSalvo);
-        estadoCliente[chatId] = null;
-        await client.sendMessage(chatId, `Endereço salvo: ${enderecoSalvo}`);
-        await client.sendMessage(chatId, "📝 Após o envio do orçamento, responda:\n✅ Tudo certo\n⚠️ Errado\nAssim podemos finalizar seu pedido. 😉");
-      }
+    if (estadoCliente[chatId] === "aguardando_endereco") {
+      await client.sendMessage(chatId, `Endereço confirmado: ${msg.body}`);
+      estadoCliente[chatId] = null;
+      await client.sendMessage(chatId, "📝 Após o envio do orçamento, responda:\n✅ Tudo certo\n⚠️ Errado\nAssim podemos finalizar seu pedido. 😉");
       return;
     }
 
@@ -206,6 +186,9 @@ client.on("message", async (msg) => {
       return;
     }
 
+    // ----------------------------
+    // Orçamento errado
+    // ----------------------------
     if (texto.includes("errado") || texto.includes("incorreto") || texto.includes("faltou") || texto.includes("corrigir") || texto.includes("ajustar")) {
       await client.sendMessage(chatId, "Certo! 😅 Me informe o que deseja alterar no orçamento. ✏️");
       estadoCliente[chatId] = "aguardando_alteracao";
