@@ -250,10 +250,8 @@ async function enviarSaudacaoSeNecessario(chatId) {
     ]);
 
     await client.sendMessage(chatId, "ℹ️ Como podemos ajudar hoje?");
-    await client.sendMessage(
-      chatId,
-      "📝 Caso deseje fazer um pedido envie-nos sua lista.\n\n▶️ Para adicionar itens use: Adicionar➕\n▶️ Para encerrar use: Encerrar❌"
-    );
+    await delay(1500);
+    await client.sendMessage(chatId, "📝 Caso deseje fazer um pedido envie-nos sua lista.\n\n▶️ Para adicionar itens use: Adicionar➕\n▶️ Para encerrar use: Encerrar❌");
   } else {
     await client.sendMessage(chatId, MSG_FORA_HORARIO);
   }
