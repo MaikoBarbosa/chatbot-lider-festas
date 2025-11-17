@@ -273,30 +273,29 @@ client.on("message", async (msg) => {
     ultimoClienteAtivo = chatId;
 
     // Mensagem vinda do VENDEDOR (humano que usa o mesmo WhatsApp)
-    if (msg.fromMe) {
-      try {
-        let clienteRespondido = null;
+  if (msg.fromMe) {
+  try {
+    let clienteRespondido = null;
 
-        if (msg.hasQuotedMsg) {
-          const quoted = await msg.getQuotedMessage();
-          clienteRespondido = quoted.from; // id do cliente citado
-        } else if (ultimoClienteAtivo) {
-          // se não houver quote, assume o último cliente ativo
-          clienteRespondido = ultimoClienteAtivo;
-        }
-
-        if (clienteRespondido) {
-          const removed = marcarAtendido(clienteRespondido);
-          if (removed) {
-            await enviarResumoPendentes();
-          }
-        }
-      } catch (e) {
-        console.error("Erro processando resposta humana:", e);
-      }
-      return;
+    if (msg.hasQuotedMsg) {
+      const quoted = await msg.getQuotedMessage();
+      clienteRespondido = quoted.from;
+    } else {
+      // 👉 Pega o cliente do próprio chat que o vendedor está respondendo
+      clienteRespondido = msg.to;
     }
 
+    if (clienteRespondido) {
+      const removed = marcarAtendido(clienteRespondido);
+      if (removed) {
+        await enviarResumoPendentes();
+      }
+    }
+  } catch (e) {
+    console.error("Erro processando resposta humana:", e);
+  }
+  return;
+}
     // Marca pendente COM nome do WhatsApp
     const isNewNotification = await marcarPendente(
       chatId,
