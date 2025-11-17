@@ -1,11 +1,10 @@
 // ----------------------------
 // chatbot.js
 // ----------------------------
-import express from "express";
-import qrcode from "qrcode-terminal";
-import pkg from "whatsapp-web.js";
+const express = require("express");
+const qrcode = require("qrcode-terminal");
+const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 
-const { Client, LocalAuth, MessageMedia } = pkg;
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -16,7 +15,9 @@ app.get("/", (req, res) => {
   res.send("🚀 Bot do WhatsApp está rodando no Railway!");
 });
 
-app.listen(port, () => console.log(`🌐 Servidor ativo na porta ${port}`));
+app.listen(port, () =>
+  console.log(`🌐 Servidor ativo no Railway, porta ${port}`)
+);
 
 // ----------------------------
 // Função delay
@@ -74,11 +75,12 @@ client.on("message", async (msg) => {
     const chatId = chat.id._serialized;
     const texto = (msg.body || "").trim().toLowerCase();
 
+    const agora = Date.now();
+    const tresHoras = 3 * 60 * 60 * 1000;
+
     // ----------------------------
     // Saudações
     // ----------------------------
-    const agora = Date.now();
-    const tresHoras = 3 * 60 * 60 * 1000;
     if (
       (texto.includes("oi") ||
         texto.includes("ola") ||
@@ -132,7 +134,7 @@ client.on("message", async (msg) => {
     }
 
     if (estadoCliente[chatId] === "aguardando_item") {
-      await client.sendMessage(chatId, `Perfeito! 😄 Deseja adicionar algo no seu pedido ou podemos encerrar?`);
+      await client.sendMessage(chatId, `Perfeito! 😄 Já anotei que deseja adicionar: *${msg.body}*`);
       estadoCliente[chatId] = null;
       return;
     }
