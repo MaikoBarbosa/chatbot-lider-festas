@@ -198,7 +198,7 @@ async function enviarNotificacoesNovosPendentes() {
     if (!notifHistory[hoje] || !notifHistory[hoje][chatId]) continue;
     if (info.notifiedToVendor) continue;
 
-    const texto = `🚨 *PENDENTE*\n👤 ${info.nome}\n💬 ${info.ultimaMsg || ""}`;
+    const texto = `🚨 *PENDENTE*\n👤 ${info.nome}\n- ${info.ultimaMsg || ""}`;
     try {
       await client.sendMessage(VENDEDOR_CHAT, texto);
       atendimentos[chatId].notifiedToVendor = true;
