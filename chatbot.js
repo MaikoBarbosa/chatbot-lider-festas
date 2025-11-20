@@ -5,7 +5,7 @@ const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const qrcode = require("qrcode-terminal"); // << ADICIONADO
+const qrcode = require("qrcode-terminal");
 
 // ===================== CONFIG =====================
 const PORT = process.env.PORT || 3000;
@@ -36,12 +36,9 @@ const client = new Client({
   puppeteer: { args: ["--no-sandbox", "--disable-setuid-sandbox"], headless: true },
 });
 
-// >>>>> QR CODE FORMATADO <<<<<
+// >>>>> QR CODE APENAS TEXTO <<<<<
 client.on("qr", (qr) => {
-  console.log("\n====================================");
-  console.log(" ESCANEIE O QR CODE ABAIXO");
-  console.log("====================================\n");
-  qrcode.generate(qr, { small: true });
+  qrcode.generate(qr, { small: true }); // somente o QR, sem mensagens
 });
 
 client.on("ready", () => console.log("Bot conectado"));
