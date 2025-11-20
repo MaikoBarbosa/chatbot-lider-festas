@@ -53,8 +53,11 @@ client.initialize();
 async function enviarSaudacao(chatId) {
   try {
     await client.sendMessage(chatId, "Olá! 👋 Seja bem-vindo(a)! 🎉");
+    await delay(1200);
     await client.sendMessage(chatId, "⏳ Líder Festas agradece por sua preferência! Estamos em atendimento!");
+    await delay(1200);
     await client.sendMessage(chatId, "Encanto aguarda você, confira nossas ofertas abaixo 👇");
+    await delay(1200);
   } catch (e) {
     console.log("Erro saudação", e);
   }
@@ -72,7 +75,9 @@ async function enviarImagem(numero, caminho, legenda) {
 
 async function enviarOfertas(chatId) {
   await enviarImagem(chatId, "./imagens/encarte.png", "👏🏻Confira nossas ofertas! 🎉");
+  await delay(1200);
   await enviarImagem(chatId, "./imagens/1.png", "👏🏻Gostaria de levar um de nossos produtos? 🎉");
+  await delay(1200);
   await enviarImagem(chatId, "./imagens/2.png", "👏🏻Gostaria de levar um de nossos produtos? 🎉");
 }
 
