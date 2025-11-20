@@ -5,6 +5,7 @@ const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const qrcode = require("qrcode-terminal"); // << ADICIONADO
 
 // ===================== CONFIG =====================
 const PORT = process.env.PORT || 3000;
@@ -35,7 +36,14 @@ const client = new Client({
   puppeteer: { args: ["--no-sandbox", "--disable-setuid-sandbox"], headless: true },
 });
 
-client.on("qr", (qr) => console.log(qr));
+// >>>>> QR CODE FORMATADO <<<<<
+client.on("qr", (qr) => {
+  console.log("\n====================================");
+  console.log(" ESCANEIE O QR CODE ABAIXO");
+  console.log("====================================\n");
+  qrcode.generate(qr, { small: true });
+});
+
 client.on("ready", () => console.log("Bot conectado"));
 client.initialize();
 
