@@ -10,6 +10,9 @@ const path = require("path");
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, "ultimo_envio.json");
 
+// Delay de 5 segundos
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 // Carregar registros de horário
 function loadJson() {
   try {
@@ -37,13 +40,12 @@ const client = new Client({
   puppeteer: { args: ["--no-sandbox", "--disable-setuid-sandbox"], headless: true },
 });
 
-// >>>>> QR CODE APENAS TEXTO (SEU MODELO) <<<<<
+// QR CODE
 client.on("qr", (qr) => {
   console.log("===========================================");
   console.log("🟢 ESCANEIE ESTE QR CODE (em texto):");
-  console.log(qr); // <-- MOSTRA APENAS O TEXTO DO QR CODE
+  console.log(qr);
   console.log("===========================================");
-  // qrcode.generate(qr, { small: true }); // desativado
 });
 
 client.on("ready", () => console.log("✅ Bot conectado ao WhatsApp!"));
@@ -53,11 +55,14 @@ client.initialize();
 async function enviarSaudacao(chatId) {
   try {
     await client.sendMessage(chatId, "Olá! 👋 Seja bem-vindo(a)! 🎉");
-    await delay(1200);
+    await delay(5000);
+
     await client.sendMessage(chatId, "⏳ Líder Festas agradece por sua preferência! Estamos em atendimento!");
-    await delay(1200);
+    await delay(5000);
+
     await client.sendMessage(chatId, "Encanto aguarda você, confira nossas ofertas abaixo 👇");
-    await delay(1200);
+    await delay(5000);
+
   } catch (e) {
     console.log("Erro saudação", e);
   }
@@ -75,9 +80,11 @@ async function enviarImagem(numero, caminho, legenda) {
 
 async function enviarOfertas(chatId) {
   await enviarImagem(chatId, "./imagens/encarte.png", "👏🏻Confira nossas ofertas! 🎉");
-  await delay(1200);
+  await delay(5000);
+
   await enviarImagem(chatId, "./imagens/1.png", "👏🏻Gostaria de levar um de nossos produtos? 🎉");
-  await delay(1200);
+  await delay(5000);
+
   await enviarImagem(chatId, "./imagens/2.png", "👏🏻Gostaria de levar um de nossos produtos? 🎉");
 }
 
@@ -91,7 +98,6 @@ client.on("message", async (msg) => {
     const agora = Date.now();
     const limite = 3 * 60 * 60 * 1000; // 3 horas
 
-    // Se nunca enviou ou já passaram 3 horas → envia saudação + ofertas
     if (!ultimoEnvio[chatId] || (agora - ultimoEnvio[chatId] > limite)) {
       await enviarSaudacao(chatId);
       await enviarOfertas(chatId);
