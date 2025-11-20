@@ -5,7 +5,6 @@ const { Client, LocalAuth, MessageMedia } = require("whatsapp-web.js");
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
-const qrcode = require("qrcode-terminal");
 
 // ===================== CONFIG =====================
 const PORT = process.env.PORT || 3000;
@@ -18,11 +17,13 @@ function loadJson() {
   } catch {}
   return {};
 }
+
 function saveJson(obj) {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(obj, null, 2));
   } catch {}
 }
+
 let ultimoEnvio = loadJson(); // { chatId: timestamp }
 
 // ===================== KEEP ALIVE =====================
@@ -36,12 +37,16 @@ const client = new Client({
   puppeteer: { args: ["--no-sandbox", "--disable-setuid-sandbox"], headless: true },
 });
 
-// >>>>> QR CODE APENAS TEXTO <<<<<
+// >>>>> QR CODE APENAS TEXTO (SEU MODELO) <<<<<
 client.on("qr", (qr) => {
-  qrcode.generate(qr, { small: true }); // somente o QR, sem mensagens
+  console.log("===========================================");
+  console.log("🟢 ESCANEIE ESTE QR CODE (em texto):");
+  console.log(qr); // <-- MOSTRA APENAS O TEXTO DO QR CODE
+  console.log("===========================================");
+  // qrcode.generate(qr, { small: true }); // desativado
 });
 
-client.on("ready", () => console.log("Bot conectado"));
+client.on("ready", () => console.log("✅ Bot conectado ao WhatsApp!"));
 client.initialize();
 
 // ===================== FUNÇÃO SAUDAÇÃO =====================
