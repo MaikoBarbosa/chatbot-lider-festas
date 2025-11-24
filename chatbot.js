@@ -25,7 +25,6 @@ client.on("qr", (qr) => {
   console.log("🟢 ESCANEIE ESTE QR CODE (em texto):");
   console.log(qr);
   console.log("===========================================");
- // qrcode.generate(qr, { small: true });
 });
 client.on("ready", () => console.log("✅ Bot conectado ao WhatsApp!"));
 client.initialize();
@@ -67,21 +66,18 @@ function extrairNumero(chatId) {
   return String(chatId).replace(/[^0-9]/g, "");
 }
 
-// Gera data local de Fortaleza (UTC-3) de forma robusta, independente do timezone do servidor
+// Gera data local de Fortaleza (UTC-3)
 function getFortalezaNow() {
   const now = new Date();
-  // Fortaleza é UTC-3 (sem DST)
   const targetOffsetHours = -3;
-  // getTimezoneOffset() retorna minutos de deslocamento (ex: -180 para UTC+3)
   const localOffsetHours = -now.getTimezoneOffset() / 60;
   const deltaHours = targetOffsetHours - localOffsetHours;
-  const local = new Date(now.getTime() + deltaHours * 3600 * 1000);
-  return local;
+  return new Date(now.getTime() + deltaHours * 3600 * 1000);
 }
 
 function getHorarioInfo() {
   const local = getFortalezaNow();
-  const weekday = local.getDay(); // 0=domingo ... 6=sábado
+  const weekday = local.getDay();
   const h = local.getHours();
   const m = local.getMinutes();
   const minutos = h * 60 + m;
@@ -89,14 +85,13 @@ function getHorarioInfo() {
   const toMin = (hh, mm) => hh * 60 + mm;
 
   let openStart = null, openEnd = null;
-  if (weekday >= 1 && weekday <= 5) { // seg-sex
+  if (weekday >= 1 && weekday <= 5) {
     openStart = toMin(7, 30);
     openEnd = toMin(17, 30);
-  } else if (weekday === 6) { // sab
+  } else if (weekday === 6) {
     openStart = toMin(7, 30);
     openEnd = toMin(13, 0);
   } else {
-    // domingo fechado
     return { open: false, dateKey: local.toISOString().slice(0,10), periodKey: `closed:${local.toISOString().slice(0,10)}` };
   }
 
@@ -115,52 +110,38 @@ Sábado: 7:30 às 13:00
 Domingo: Fechado`;
 
 // ===================== Gerenciamento de Pendentes =====================
-// marcarPendente: marca atendimento e garante 1 notificação por cliente por dia
 async function marcarPendente(chatId, mensagem, msgObj) {
   const short = mensagem ? String(mensagem).slice(0, 200) : "";
   const numero = extrairNumero(chatId);
 
-  // hoje (YYYY-MM-DD) - usa data de server (não crítico aqui), mas podemos usar Fortaleza também
   const hoje = getHorarioInfo().dateKey;
   notifHistory[hoje] = notifHistory[hoje] || {};
 
-  // nome do contato
   let nomeWhatsApp = numero;
   try {
     const contato = await msgObj.getContact();
     nomeWhatsApp = contato.pushname || contato.name || numero;
-  } catch (e) {
-    nomeWhatsApp = numero;
-  }
+  } catch {}
 
-  // cria/atualiza registro de atendimento
   if (!atendimentos[chatId]) {
     atendimentos[chatId] = {
       nome: nomeWhatsApp,
       ultimaMsg: short,
       pendente: true,
-      notifiedToVendor: false, // se já enviamos para vendedor
+      notifiedToVendor: false,
     };
   } else {
     atendimentos[chatId].ultimaMsg = short;
     atendimentos[chatId].pendente = true;
-    // reset notifiedToVendor se for um novo ciclo (mas vamos controlar com notifHistory)
   }
   saveJson(ATEND_FILE, atendimentos);
 
-  // Se já notificamos HOJE para esse cliente -> não notificar de novo
-  if (notifHistory[hoje][chatId]) {
-    return false;
-  }
+  if (notifHistory[hoje][chatId]) return false;
 
-  // marca no histórico que avisamos hoje (impede repetição ao longo do dia)
   notifHistory[hoje][chatId] = true;
-
-  // indicamos que há uma nova notificação a ser enviada ao vendedor
   return true;
 }
 
-// marcarAtendido: marca atendido e salva
 function marcarAtendido(chatId) {
   if (atendimentos[chatId]) {
     atendimentos[chatId].pendente = false;
@@ -171,10 +152,8 @@ function marcarAtendido(chatId) {
   return false;
 }
 
-// enviar resumo de pendentes ao vendedor
 async function enviarResumoPendentes() {
   const pendentes = Object.entries(atendimentos).filter(([_, v]) => v.pendente);
-
   if (pendentes.length === 0) {
     await client.sendMessage(VENDEDOR_CHAT, "✅ Nenhum cliente pendente.");
     return;
@@ -188,13 +167,11 @@ async function enviarResumoPendentes() {
   await client.sendMessage(VENDEDOR_CHAT, msg);
 }
 
-// enviar notificações dos novos pendentes (só os não-notificados ao vendedor)
 async function enviarNotificacoesNovosPendentes() {
   const hoje = getHorarioInfo().dateKey;
 
   for (const [chatId, info] of Object.entries(atendimentos)) {
     if (!info.pendente) continue;
-    // só enviar se marcamos notifHistory hoje e ainda não notificamos o vendedor (notifiedToVendor false)
     if (!notifHistory[hoje] || !notifHistory[hoje][chatId]) continue;
     if (info.notifiedToVendor) continue;
 
@@ -210,7 +187,7 @@ async function enviarNotificacoesNovosPendentes() {
   }
 }
 
-// ===================== Imagens =====================
+// ===================== MIDIAS =====================
 async function enviarImagem(numero, caminho, legenda) {
   try {
     const media = MessageMedia.fromFilePath(caminho);
@@ -219,6 +196,7 @@ async function enviarImagem(numero, caminho, legenda) {
     console.error("Erro enviando imagem", caminho, e);
   }
 }
+
 async function enviarVariasImagens(numero, imagens) {
   for (const item of imagens) {
     await enviarImagem(numero, item.caminho, item.legenda);
@@ -226,13 +204,23 @@ async function enviarVariasImagens(numero, imagens) {
   }
 }
 
-// ===================== Saudação automática (uma vez por períodoKey por chat) =====================
+// ✅ FUNÇÃO NOVA — enviar vídeo
+async function enviarVideo(numero, caminho, legenda = "") {
+  try {
+    const media = MessageMedia.fromFilePath(caminho);
+    await client.sendMessage(numero, media, { caption: legenda });
+  } catch (e) {
+    console.error("Erro enviando vídeo", caminho, e);
+  }
+}
+
+// ===================== Saudação automática =====================
 async function enviarSaudacaoSeNecessario(chatId) {
   const info = getHorarioInfo();
-  const pk = info.periodKey; // e.g. "open:2025-11-17" ou "closed:2025-11-17"
+  const pk = info.periodKey;
 
   saudacoes[chatId] = saudacoes[chatId] || {};
-  if (saudacoes[chatId][pk]) return false; // já saudou neste período
+  if (saudacoes[chatId][pk]) return false;
 
   saudacoes[chatId][pk] = true;
   saveJson(SAU_FILE, saudacoes);
@@ -244,7 +232,11 @@ async function enviarSaudacaoSeNecessario(chatId) {
     await delay(1200);
     await client.sendMessage(chatId, `Encanto aguarda, confira nossas ofertas:`);
 
-    // tente enviar imagens (verifique se existem)
+    // ⬇️ ENVIA O VÍDEO AQUI
+    await enviarVideo(chatId, "./videos/oferta.mp4", "🎥 Confira nosso vídeo de ofertas!");
+    await delay(2000);
+
+    // IMAGENS
     await enviarVariasImagens(chatId, [
       { caminho: "./imagens/encarte.png", legenda: "👏🏻Confira nossas ofertas! 🎉" },
       { caminho: "./imagens/1.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" },
@@ -254,6 +246,7 @@ async function enviarSaudacaoSeNecessario(chatId) {
     await delay(800);
     await client.sendMessage(chatId, "ℹ️ Como podemos ajudar hoje?\n▶️ Para adicionar itens use: Adicionar➕\n▶️ Para encerrar use: Encerrar❌");
     return true;
+
   } else {
     await client.sendMessage(chatId, MSG_FORA_HORARIO);
     return true;
@@ -269,9 +262,7 @@ client.on("message", async (msg) => {
     const chatId = chat.id._serialized;
     const texto = (msg.body || "").trim().toLowerCase();
 
-    // ---------------------------
-    // Mensagem do vendedor (humano no mesmo WhatsApp)
-    // ---------------------------
+    // ------- MENSAGEM DO VENDEDOR -------
     if (msg.from === VENDEDOR_CHAT) {
       try {
         let clienteRespondido = null;
@@ -280,21 +271,16 @@ client.on("message", async (msg) => {
           const quoted = await msg.getQuotedMessage();
           clienteRespondido = quoted.from;
         } else {
-          // vendedor enviando diretamente em um chat (quando vendedor abre o chat do cliente)
           const vendedorChat = await msg.getChat();
           clienteRespondido = vendedorChat.id._serialized;
         }
 
         if (clienteRespondido) {
-          // marca atendido e prepara atualização
           if (marcarAtendido(clienteRespondido)) {
-            // limpa notifHistory de hoje para esse cliente (permitir nova notificação em outro dia)
             const hoje = getHorarioInfo().dateKey;
             if (notifHistory[hoje] && notifHistory[hoje][clienteRespondido]) {
               delete notifHistory[hoje][clienteRespondido];
             }
-
-            // envia resumo atualizado para o vendedor
             await enviarResumoPendentes();
           }
         }
@@ -304,22 +290,17 @@ client.on("message", async (msg) => {
       return;
     }
 
-    // ---------------------------
-    // Cliente: marcar pendente (apenas 1 notificação por dia)
-    // ---------------------------
+    // ------- CLIENTE -------
     const deveNotificar = await marcarPendente(chatId, msg.body, msg);
     if (deveNotificar) {
-      // envia notificações novas para o vendedor (apenas os novos)
       await enviarNotificacoesNovosPendentes();
     }
 
-    // Saudação (apenas 1x por open/closed por dia)
     const saudou = await enviarSaudacaoSeNecessario(chatId);
     if (saudou) return;
 
-    // ========================= FLUXO CLIENTE COMPLETO =========================
+    // ========================= FLUXO CLIENTE =========================
 
-    // Adicionar itens
     if (["mais", "bota", "adicionar", "adiciona", "coloca", "acrescenta"].some((t) => texto.includes(t))) {
       await client.sendMessage(chatId, `Perfeito! 😊 Pode me enviar o que mais deseja adicionar ao seu pedido.`);
       estadoCliente[chatId] = "aguardando_item";
@@ -333,14 +314,14 @@ client.on("message", async (msg) => {
       return;
     }
 
-    // Encerrar pedido -> pergunta tipo (retirada / entrega)
+    // Encerrar pedido
     if (["encerrar", "pode encerrar", "só isso", "somente", "somente isso", "encerra"].some((t) => texto.includes(t))) {
       await client.sendMessage(chatId, `Certo! 😊 Só pra confirmar, será *retirada na loja* ou *entrega*?`);
       estadoCliente[chatId] = "aguardando_tipo_entrega";
       return;
     }
 
-    // Tipo entrega / retirada
+    // Tipo de entrega
     if (estadoCliente[chatId] === "aguardando_tipo_entrega") {
       if (texto.includes("entrega")) {
         if (!enderecos[chatId]) {
@@ -363,7 +344,7 @@ client.on("message", async (msg) => {
       }
     }
 
-    // Recebeu endereço (salva)
+    // Salva endereço
     if (estadoCliente[chatId] === "aguardando_endereco") {
       enderecos[chatId] = msg.body.trim();
       saveJson(END_FILE, enderecos);
@@ -373,7 +354,7 @@ client.on("message", async (msg) => {
       return;
     }
 
-    // Confirma endereço salvo
+    // Confirma endereço
     if (estadoCliente[chatId] === "confirma_endereco") {
       if (texto.includes("sim")) {
         await client.sendMessage(chatId, `Perfeito! Endereço mantido: ${enderecos[chatId]}`);
@@ -402,12 +383,11 @@ client.on("message", async (msg) => {
         estadoCliente[chatId] = "aguardando_alteracao";
         return;
       }
-      // se não entende, pede para confirmar
       await client.sendMessage(chatId, `Responda "tudo certo" ou "errado" por favor.`);
       return;
     }
 
-    // Aguardar alteração do orçamento
+    // Alteração de orçamento
     if (estadoCliente[chatId] === "aguardando_alteracao") {
       await client.sendMessage(chatId, `Perfeito! 😊 Já anotei: *${msg.body}*`);
       await delay(800);
@@ -424,7 +404,7 @@ client.on("message", async (msg) => {
       return;
     }
 
-    // PAGAMENTOS - DINHEIRO (troco)
+    // PAGAMENTOS - DINHEIRO
     if (texto.includes("dinheiro")) {
       await client.sendMessage(chatId, `Certo! Precisa de troco? 💵 (Responda: sim ou não)`);
       estadoCliente[chatId] = "perguntou_troco";
@@ -492,9 +472,6 @@ client.on("message", async (msg) => {
       estadoCliente[chatId] = null;
       return;
     }
-
-    // Se nenhuma das condições, você pode expandir aqui
-    // Ex.: catálogo, ajuda, falar com vendedor, etc.
 
   } catch (err) {
     console.error("Erro no handler:", err);
