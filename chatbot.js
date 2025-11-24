@@ -10,7 +10,7 @@ const path = require("path");
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, "ultimo_envio.json");
 
-// Delay de 5 segundos
+// Delay de X segundos
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Carregar registros de horário
@@ -27,7 +27,7 @@ function saveJson(obj) {
   } catch {}
 }
 
-let ultimoEnvio = loadJson(); // { chatId: timestamp }
+let ultimoEnvio = loadJson();  // { chatId: timestamp OR "enviando" }
 
 // ===================== KEEP ALIVE =====================
 const app = express();
@@ -79,13 +79,13 @@ async function enviarImagem(numero, caminho, legenda) {
 }
 
 async function enviarOfertas(chatId) {
-  await enviarImagem(chatId, "./imagens/encarte.png", "👏🏻Confira nossas ofertas! 🎉");
+  await enviarImagem(chatId, "./imagens/encarte.png", "👏🏻 Confira nossas ofertas! 🎉");
   await delay(5000);
 
-  await enviarImagem(chatId, "./imagens/1.png", "👏🏻Gostaria de levar um de nossos produtos? 🎉");
+  await enviarImagem(chatId, "./imagens/1.png", "👏🏻 Gostaria de levar um de nossos produtos? 🎉");
   await delay(5000);
 
-  await enviarImagem(chatId, "./imagens/2.png", "👏🏻Gostaria de levar um de nossos produtos? 🎉");
+  await enviarImagem(chatId, "./imagens/2.png", "👏🏻 Gostaria de levar um de nossos produtos? 🎉");
 }
 
 // ===================== HANDLER =====================
@@ -98,10 +98,24 @@ client.on("message", async (msg) => {
     const agora = Date.now();
     const limite = 3 * 60 * 60 * 1000; // 3 horas
 
+    // ========== 🔒 TRAVA ANTI-DUPLICAÇÃO ==========
+    if (ultimoEnvio[chatId] === "enviando") {
+      console.log("⛔ Ignorado (já está enviando para este chat)");
+      return;
+    }
+
+    // Se não enviou ainda ou passou 3 horas
     if (!ultimoEnvio[chatId] || (agora - ultimoEnvio[chatId] > limite)) {
+
+      // Ativa trava
+      ultimoEnvio[chatId] = "enviando";
+      saveJson(ultimoEnvio);
+
+      // Envia saudação + ofertas
       await enviarSaudacao(chatId);
       await enviarOfertas(chatId);
 
+      // Salva horário final
       ultimoEnvio[chatId] = agora;
       saveJson(ultimoEnvio);
     }
