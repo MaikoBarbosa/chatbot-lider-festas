@@ -52,9 +52,6 @@ client.on("ready", () => console.log("✅ Bot conectado ao WhatsApp!"));
 client.initialize();
 
 // ===================== Helpers =====================
-function extrairNumero(chatId) {
-  return String(chatId).replace(/[^0-9]/g, "");
-}
 
 // Gera data local de Fortaleza (UTC-3)
 function getFortalezaNow() {
@@ -75,28 +72,39 @@ function getHorarioInfo() {
   const toMin = (hh, mm) => hh * 60 + mm;
 
   let openStart = null, openEnd = null;
+
+  // Seg–Sex
   if (weekday >= 1 && weekday <= 5) {
     openStart = toMin(7, 30);
     openEnd = toMin(17, 30);
-  } else if (weekday === 6) {
+  }
+  // Sábado
+  else if (weekday === 6) {
     openStart = toMin(7, 30);
     openEnd = toMin(13, 0);
-  } else {
-    return { open: false, dateKey: local.toISOString().slice(0,10), periodKey: closed:${local.toISOString().slice(0,10)} };
+  }
+  // Domingo fechado
+  else {
+    return {
+      open: false,
+      dateKey: local.toISOString().slice(0,10),
+      periodKey: `closed:${local.toISOString().slice(0,10)}`
+    };
   }
 
   const open = minutos >= openStart && minutos < openEnd;
   const dateKey = local.toISOString().slice(0,10);
-  const periodKey = open ? open:${dateKey} : closed:${dateKey};
+  const periodKey = open ? `open:${dateKey}` : `closed:${dateKey}`;
 
   return { open, dateKey, periodKey, local };
 }
 
-const MSG_FORA_HORARIO = `Olá! 👋 Tudo bem? Seja bem-vindo(a)! 🎉
-⚠️ No momento não estamos disponíveis.
-🕒 Horário:
-Seg–Sex: 7:30 às 17:30
-Sábado: 7:30 às 13:00
+const MSG_FORA_HORARIO = `Olá! 👋 Tudo bem?  
+⚠️ *No momento não estamos disponíveis.*
+
+🕒 *Horário de atendimento:*  
+Seg–Sex: 7:30 às 17:30  
+Sábado: 7:30 às 13:00  
 Domingo: Fechado`;
 
 // ===================== FUNÇÃO SAUDAÇÃO =====================
@@ -146,6 +154,15 @@ client.on("message", async (msg) => {
     const agora = Date.now();
     const limite = 3 * 60 * 60 * 1000; // 3 horas
 
+    // Verifica horário
+    const horario = getHorarioInfo();
+
+    // ===================== ⚠️ FORA DO HORÁRIO =====================
+    if (!horario.open) {
+      await client.sendMessage(chatId, MSG_FORA_HORARIO);
+      return; // <-- IMPORTANTE: não envia imagens, não envia saudação
+    }
+
     // ========== 🔒 TRAVA ANTI-DUPLICAÇÃO ==========
     if (ultimoEnvio[chatId] === "enviando") {
       console.log("⛔ Ignorado (já está enviando para este chat)");
@@ -155,15 +172,13 @@ client.on("message", async (msg) => {
     // Se não enviou ainda ou passou 3 horas
     if (!ultimoEnvio[chatId] || (agora - ultimoEnvio[chatId] > limite)) {
 
-      // Ativa trava
       ultimoEnvio[chatId] = "enviando";
       saveJson(ultimoEnvio);
 
-      // Envia saudação + ofertas
+      // Dentro do horário → enviar saudação + ofertas
       await enviarSaudacao(chatId);
       await enviarOfertas(chatId);
 
-      // Salva horário final
       ultimoEnvio[chatId] = agora;
       saveJson(ultimoEnvio);
     }
