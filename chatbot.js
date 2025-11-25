@@ -116,7 +116,7 @@ async function enviarSaudacao(chatId) {
     await client.sendMessage(chatId, "⏳ Líder Festas agradece por sua preferência! Estamos em atendimento!");
     await delay(5000);
 
-    await client.sendMessage(chatId, "Encanto aguarda você, confira nossas ofertas abaixo 👇");
+    await client.sendMessage(chatId, "Enquanto aguarda, confira nossas ofertas 👇");
     await delay(5000);
 
   } catch (e) {
