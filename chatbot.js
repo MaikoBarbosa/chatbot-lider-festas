@@ -104,7 +104,7 @@ function getHorarioInfo() {
 
 const MSG_FORA_HORARIO = `Olá! 👋 Tudo bem? Seja bem-vindo(a)! 🎉
 ⚠️ No momento não estamos disponíveis.
-🕒 Horário:
+🕒 Nosso Horário:
 Seg–Sex: 7:30 às 17:30
 Sábado: 7:30 às 13:00
 Domingo: Fechado`;
@@ -233,7 +233,7 @@ async function enviarSaudacaoSeNecessario(chatId) {
     await client.sendMessage(chatId, `Encanto aguarda, confira nossas ofertas:`);
 
     // ⬇️ ENVIA O VÍDEO AQUI
-    await enviarVideo(chatId, "./imagens/ofertasv.mp4", "🎥 Black Friday!");
+    await enviarVideo(chatId, "./vídeos/v.mp4", "🎥 Não fiquem de fora!");;
     await delay(2000);
 
     // IMAGENS
@@ -244,7 +244,7 @@ async function enviarSaudacaoSeNecessario(chatId) {
     ]);
 
     await delay(800);
-    await client.sendMessage(chatId, "ℹ️ Como podemos ajudar hoje?\n▶️ Para adicionar itens use: Adicionar➕\n▶️ Para encerrar use: Encerrar❌");
+    await client.sendMessage(chatId, "ℹ️ Como podemos ajudar hoje?\n\n▶️ Para adicionar itens use: Adicionar➕\n▶️ Para encerrar use: Encerrar❌");
     return true;
 
   } else {
