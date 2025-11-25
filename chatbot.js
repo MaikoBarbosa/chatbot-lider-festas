@@ -160,12 +160,13 @@ async function enviarResumoPendentes() {
   }
 
   let msg = "📋 *CLIENTES PENDENTES:*\n\n";
-  for (const [chatId, info] of pendentes) {
-    msg += `• *${info.nome}*\n  ${info.ultimaMsg}\n  id: ${chatId}\n\n`;
+  for (const [_, info] of pendentes) {
+    msg += `• *${info.nome}*\n  ${info.ultimaMsg}\n\n`;
   }
 
   await client.sendMessage(VENDEDOR_CHAT, msg);
 }
+
 
 async function enviarNotificacoesNovosPendentes() {
   const hoje = getHorarioInfo().dateKey;
@@ -204,15 +205,6 @@ async function enviarVariasImagens(numero, imagens) {
   }
 }
 
-// ✅ FUNÇÃO NOVA — enviar vídeo
-async function enviarVideo(numero, caminho, legenda = "") {
-  try {
-    const media = MessageMedia.fromFilePath(caminho);
-    await client.sendMessage(numero, media, { caption: legenda });
-  } catch (e) {
-    console.error("Erro enviando vídeo", caminho, e);
-  }
-}
 
 // ===================== Saudação automática =====================
 async function enviarSaudacaoSeNecessario(chatId) {
@@ -232,13 +224,9 @@ async function enviarSaudacaoSeNecessario(chatId) {
     await delay(1200);
     await client.sendMessage(chatId, `Encanto aguarda, confira nossas ofertas:`);
 
-    // ⬇️ ENVIA O VÍDEO AQUI
-    await enviarVideo(chatId, "./videos/ofertasv.mp4", "🎥 Não fiquem de fora!");;
-    await delay(2000);
-
     // IMAGENS
     await enviarVariasImagens(chatId, [
-      { caminho: "./imagens/black.png", legenda: "👏🏻Black Friday 🩵" },
+      { caminho: "./imagens/black.jpeg", legenda: "👏🏻Black Friday 🩵" },
       { caminho: "./imagens/1.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" },
       { caminho: "./imagens/2.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" },
     ]);
