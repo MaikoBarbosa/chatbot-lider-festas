@@ -233,12 +233,12 @@ async function enviarSaudacaoSeNecessario(chatId) {
     await client.sendMessage(chatId, `Encanto aguarda, confira nossas ofertas:`);
 
     // ⬇️ ENVIA O VÍDEO AQUI
-    await enviarVideo(chatId, "./vídeos/v.mp4", "🎥 Não fiquem de fora!");;
+    await enviarVideo(chatId, "./videos/ofertasv.mp4", "🎥 Não fiquem de fora!");;
     await delay(2000);
 
     // IMAGENS
     await enviarVariasImagens(chatId, [
-     
+      { caminho: "./imagens/black.png", legenda: "👏🏻Black Friday 🩵" },
       { caminho: "./imagens/1.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" },
       { caminho: "./imagens/2.png", legenda: "👏🏻Gostaria de levar um de nossos produtos? 🎉" },
     ]);
